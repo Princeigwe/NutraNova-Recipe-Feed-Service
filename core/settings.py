@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    "recipes.apps.RecipesConfig",
+
 
     # 3rd party apps
     "ariadne_django",

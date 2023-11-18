@@ -18,4 +18,7 @@ def get_user(info):
   
   # modified decoded_data is now the user details
   user = decoded_data
+  # before making any request in the recipe service, user is to be on-boarded in the users microservice
+  if user["is_on_boarded"] == False:
+    raise Exception("Unauthorized request: User is not yet on-boarded.")
   return user

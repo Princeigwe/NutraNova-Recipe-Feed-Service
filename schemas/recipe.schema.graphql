@@ -1,7 +1,85 @@
+type Ingredients{
+  name: String
+  quantity: Int
+  unit: String
+}
+
+input IngredientsInput{
+  name: String
+  quantity: Int
+  unit: String
+}
+
+enum RECIPE_STATUS{
+  DRAFT
+  PUBLISHED
+}
+
+input TimeInput{
+  hour: Int
+  minute: Int!
+  seconds: Int
+}
+
+
+input CreateRecipeInput{
+  title: String!
+  description: String!
+  ingredients: [IngredientsInput]!
+  instructions: [String!]!
+  preparation_time: TimeInput!
+  cooking_time: TimeInput!
+  servings: Int!
+  images: [String]!
+}
+
+
+type Chef{
+  firstName: String
+  lastName: String
+  email: String
+  username: String
+  age: Int
+  gender: String
+  role: String
+  dietaryPreference: String
+  healthGoal: String
+  allergens: [String]
+  activityLevel: String
+  cuisines: [String]
+  medicalConditions: [String]
+  tastePreferences: [String]
+  isOnBoarded: Boolean
+}
+
+
+type Recipe{
+  title: String
+  description: String
+  ingredients: [Ingredients]
+  instructions: [String]
+  preparationTime: String
+  cookingTime: String
+  servings: Int
+  images: [String]
+  chef: Chef
+  status: RECIPE_STATUS
+  created: String
+  published: String
+}
+
+type RecipeResponse{
+  message: String
+  recipe: Recipe
+  error: String
+}
+
+
+
 type Query{
   hello: String
 }
 
 type Mutation{
-  bye: String
+  createRecipe(input: CreateRecipeInput): RecipeResponse
 }

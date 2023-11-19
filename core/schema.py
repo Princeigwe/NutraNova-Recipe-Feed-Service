@@ -4,6 +4,7 @@ from recipes import resolvers
 type_defs = load_schema_from_path('schemas')
 
 query = QueryType()
+query.set_field("recipeTags", resolvers.resolve_recipe_tags)
 
 
 mutation = MutationType()

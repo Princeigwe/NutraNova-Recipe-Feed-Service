@@ -11,6 +11,13 @@ def get_tag(name):
   except Tag.DoesNotExist:
     raise Exception("Tag not recorded in NutraNova")
 
+def resolve_recipe_tags(*_):
+  """this function may be needed when the user needs to see the list af all available tags for recipe creation"""
+  tags = Tag.objects.all()
+  tag_list = [tag.name for tag in tags]
+  return tag_list
+
+
 def resolve_create_recipe(_, info, input: dict):
   user = get_user(info)
 

@@ -79,7 +79,7 @@ type RecipeResponse{
 
 
 type Query{
-  hello: String
+  recipeTags: [String]!
 }
 
 type Mutation{

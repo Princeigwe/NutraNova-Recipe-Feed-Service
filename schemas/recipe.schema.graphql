@@ -31,6 +31,7 @@ input CreateRecipeInput{
   cooking_time: TimeInput!
   servings: Int!
   images: [String]!
+  tags: [String!]!
 }
 
 
@@ -62,6 +63,7 @@ type Recipe{
   cookingTime: String
   servings: Int
   images: [String]
+  tags: [String]
   chef: Chef
   status: RECIPE_STATUS
   created: String

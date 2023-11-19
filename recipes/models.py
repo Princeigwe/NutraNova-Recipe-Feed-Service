@@ -4,6 +4,16 @@ from enums import choices
 
 # Create your models here.
 
+
+class Tag(models.Model):
+  name = models.CharField(max_length=20)
+
+  class Meta:
+    ordering = ("name", )
+
+  def __str__(self) -> str:
+    return self.name
+
 class Recipe(models.Model):
   title             = models.CharField(max_length=50)
   description       = models.CharField(max_length=200)
@@ -13,6 +23,7 @@ class Recipe(models.Model):
   cooking_time      = models.TimeField()
   servings          = models.IntegerField()
   images            = ArrayField( models.URLField(max_length=500, blank=True, null=True), size=4 )
+  tags              = models.ManyToManyField(Tag)
   chef              = models.JSONField()
   status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT")
   created           = models.DateTimeField(auto_now_add=True)
@@ -21,3 +32,8 @@ class Recipe(models.Model):
 
   def __str__(self) -> str:
     return self.title
+  
+  def tag_names(self):
+    return ', '.join([tag.name for tag in self.tags.all()])
+  tag_names.short_description = "Tag Names"
+  

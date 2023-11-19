@@ -24,3 +24,7 @@ urlpatterns = [
 
     path('graphql/', GraphQLView.as_view(schema=schema), name='graphql')
 ]
+
+
+admin.site.site_header = "NutraNove Recipe Feed Admin"
+

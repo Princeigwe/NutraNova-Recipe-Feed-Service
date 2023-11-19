@@ -1,8 +1,15 @@
-from .models import Recipe
+from .models import Recipe, Tag
 from utils.get_user import get_user
 import datetime
+from django.forms.models import model_to_dict
 
 
+def get_tag(name):
+  try:
+    recipe_tag = Tag.objects.get(name=name)
+    return recipe_tag
+  except Tag.DoesNotExist:
+    raise Exception("Tag not recorded in NutraNova")
 
 def resolve_create_recipe(_, info, input: dict):
   user = get_user(info)
@@ -43,11 +50,22 @@ def resolve_create_recipe(_, info, input: dict):
     images=images,
     chef=user
   )
+
+  for tag_name in input['tags']:
+    tag = get_tag(tag_name)
+    recipe.tags.add(tag)
+  
   recipe.save()
+  tags = recipe.tags.all()
+  
+  # convert all recipe instance keys, except for "tags" to dict keys and assign to recipe_response variable
+  recipe_response = model_to_dict(recipe, exclude=['tags']) 
+  recipe_response_tags = [tag.name for tag in tags]
+  recipe_response['tags'] = recipe_response_tags
 
   return {
     "message": "Recipe created and saved as draft",
-    "recipe": recipe
+    "recipe": recipe_response
   }
 
 

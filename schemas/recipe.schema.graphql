@@ -1,3 +1,23 @@
+enum INGREDIENT_MEASUREMENT_UNITS{
+  oz
+  lb
+  g
+  kg
+  Tbsp
+  tsp
+  c
+  pt
+  gal
+  l
+  mL
+  doz
+  qt
+  loaf
+  bar
+  package
+  piece
+}
+
 type Ingredients{
   name: String
   quantity: Int
@@ -5,9 +25,9 @@ type Ingredients{
 }
 
 input IngredientsInput{
-  name: String
-  quantity: Int
-  unit: String
+  name: String!
+  quantity: Int!
+  unit: INGREDIENT_MEASUREMENT_UNITS
 }
 
 enum RECIPE_STATUS{

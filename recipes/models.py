@@ -24,6 +24,7 @@ class Recipe(models.Model):
   servings          = models.IntegerField()
   images            = ArrayField( models.URLField(max_length=500, blank=True, null=True), size=4 )
   tags              = models.ManyToManyField(Tag)
+  nutritional_value = models.JSONField(default=dict)
   chef              = models.JSONField()
   status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT")
   created           = models.DateTimeField(auto_now_add=True)

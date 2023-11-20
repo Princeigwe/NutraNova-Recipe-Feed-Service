@@ -2,6 +2,7 @@ from .models import Recipe, Tag
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
+from utils.nutritional_value import calculated_nutritional_value
 
 
 def get_tag(name):
@@ -26,6 +27,8 @@ def resolve_create_recipe(_, info, input: dict):
     description = input['description']
     ingredients = input['ingredients']
     instructions = input['instructions']
+
+    nutritional_value = calculated_nutritional_value(ingredients)
 
     # creating instance of datetime.time for recipe preparation time based on the input given
     if ('hour' in input['preparation_time'] and 'second' in input['preparation_time']):
@@ -55,6 +58,7 @@ def resolve_create_recipe(_, info, input: dict):
       preparation_time=preparation_time,
       cooking_time=cooking_time,
       servings=servings,
+      nutritional_value=nutritional_value,
       images=images,
       chef=user
     )
@@ -65,8 +69,6 @@ def resolve_create_recipe(_, info, input: dict):
     
     recipe.save()
     tags = recipe.tags.all() # fetch all tags associated to the recipe
-
-    print(recipe.created)
     
     # convert all recipe instance keys, except for "tags" to dict keys and assign to recipe_response variable
     recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published']) 

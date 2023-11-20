@@ -69,8 +69,6 @@ def resolve_create_recipe(_, info, input: dict):
     
     recipe.save()
     tags = recipe.tags.all() # fetch all tags associated to the recipe
-
-    print(recipe.created)
     
     # convert all recipe instance keys, except for "tags" to dict keys and assign to recipe_response variable
     recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published']) 

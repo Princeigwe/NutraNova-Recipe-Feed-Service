@@ -1,4 +1,4 @@
-from .models import Recipe, Tag
+from .models import Recipe, Tag, Chef
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
@@ -23,6 +23,8 @@ def resolve_create_recipe(_, info, input: dict):
   user = get_user(info)
 
   try:
+
+    chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
     title = input['title']
     description = input['description']
     ingredients = input['ingredients']
@@ -60,7 +62,7 @@ def resolve_create_recipe(_, info, input: dict):
       servings=servings,
       nutritional_value=nutritional_value,
       images=images,
-      chef=user
+      chef=chef
     )
 
     for tag_name in input['tags']:
@@ -69,13 +71,21 @@ def resolve_create_recipe(_, info, input: dict):
     
     recipe.save()
     tags = recipe.tags.all() # fetch all tags associated to the recipe
-    
+
+    # using snake-cased keys because GraphQL camel-cased response keys were not getting data. Also changed in schema
+    chef_details = {
+      "username": recipe.chef.username,
+			"first_name": recipe.chef.first_name,
+			"last_name": recipe.chef.last_name
+    }
+
     # convert all recipe instance keys, except for "tags" to dict keys and assign to recipe_response variable
-    recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published']) 
+    recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef']) 
     recipe_response_tags = [tag.name for tag in tags]
     recipe_response['tags'] = recipe_response_tags
     recipe_response['created'] = recipe.created
     recipe_response['published'] = recipe.published
+    recipe_response['chef'] = chef_details
 
     return {
       "message": "Recipe created and saved as draft",

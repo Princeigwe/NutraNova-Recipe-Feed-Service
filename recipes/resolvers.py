@@ -20,6 +20,15 @@ def resolve_recipe_tags(*_):
 
 
 def resolve_create_recipe(_, info, input: dict):
+  """
+  The `resolve_create_recipe` function creates a new recipe with the given input data and returns a
+  response containing the created recipe details.
+
+  :returns a dictionary with two keys: "message" and "recipe". The value of the "message" key is a
+  string indicating that the recipe has been created and saved as a draft. The value of the "recipe"
+  key is a dictionary containing the details of the created recipe, including its title, description,
+  ingredients, instructions, preparation time, cooking time, servings, nutritional value
+  """
   user = get_user(info)
 
   try:

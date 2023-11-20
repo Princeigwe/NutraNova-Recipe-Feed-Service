@@ -36,17 +36,9 @@ input CreateRecipeInput{
 
 
 type Chef{
-  firstName: String
-  lastName: String
   username: String
-  age: Int
-  gender: String
-  role: String
-  dietaryPreference: String
-  healthGoal: String
-  activityLevel: String
-  cuisines: [String]
-  tastePreferences: [String]
+  first_name: String
+  last_name: String
 }
 
 

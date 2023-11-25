@@ -2,9 +2,9 @@ from django.shortcuts import render
 from utils.compress import compress_image
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, renderer_classes
 from django.core.files.storage import FileSystemStorage
-from utils.auth_decorator import is_authenticated
+from utils.request_authz import jwt_authorization
 from rest_framework.exceptions import ParseError
 from django.conf import settings
 from utils.upload_image import upload_and_get_image_details
@@ -12,9 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
-# @csrf_exempt
-# @is_authenticated
+@csrf_exempt # ignore csrf_token error on file upload
 @api_view(['POST'])
+@jwt_authorization # calling the api_view decorator before the custom decorator is also a step in fixing rendering issue
 @parser_classes([MultiPartParser])
 def upload_recipe_image_to_cloudinary(request):
   recipe_images = []
@@ -41,5 +41,5 @@ def upload_recipe_image_to_cloudinary(request):
       {
         "message": "Images uploaded",
         "images": recipe_images
-        }
+      },
     )

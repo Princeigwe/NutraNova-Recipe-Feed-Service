@@ -7,10 +7,8 @@ load_dotenv()
 
 
 def compress_image(image):
-  # access the image file
+  # access the image file by getting its full path
   image_path = os.path.join(os.getcwd(), image)
-  print(image)
-  print(image_path)
   image = Image.open(image_path)
   width, height = image.size
 
@@ -19,5 +17,4 @@ def compress_image(image):
   
   # replacing the original image with the compressed image
   resized_image.save(image_path, 'JPEG', optimize=True, quality=90)
-  # return image_path # the new compressed image
-  return 1
+  return image_path # the new compressed image

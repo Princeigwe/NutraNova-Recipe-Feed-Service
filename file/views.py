@@ -36,10 +36,10 @@ def upload_recipe_image_to_cloudinary(request):
       upload = upload_and_get_image_details(compressed_image)
       uploaded_image_url = upload['secure_url']
       recipe_images.append(uploaded_image_url)
-      
+
     return Response(
       {
         "message": "Images uploaded",
         "images": recipe_images
         }
-                    )
+    )

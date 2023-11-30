@@ -9,6 +9,8 @@ from rest_framework.exceptions import ParseError
 from django.conf import settings
 from utils.upload_image import upload_and_get_image_details
 from django.views.decorators.csrf import csrf_exempt
+from utils.upload_video import upload_video
+import time
 
 # Create your views here.
 
@@ -43,3 +45,30 @@ def upload_recipe_image_to_cloudinary(request):
         "images": recipe_images
       },
     )
+
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
+def upload_recipe_video_to_cloudinary(request):
+  video = request.FILES['video'] if 'video' in request.FILES else None
+  if video:
+    # if any( char.isspace() for char in video.name): # checking for gaps in the file name
+    #   raise ParseError("Video name cannot be parsed. Rename it or choose another")
+  
+    default_storage = settings.MEDIA_ROOT
+    fs = FileSystemStorage(location=default_storage)
+    file = fs.save(video.name, video)
+    file_url = fs.url(file)
+
+    video_path = f"{settings.BASE_DIR}{file_url}"
+    # print(settings.BASE_DIR)
+    # print(file_url)
+    # print(video_path)
+    # if video_path == '/home/princeigwe/NutraNova-Services/Recipes-Service/media/flowers_yellow_blossom_windy_nature_434.mp4':
+    #   print(True)
+    # else:
+    #   print("not the same path")
+    upload = upload_video(video_path)
+    return Response(upload)
+  else:
+    return Response({"hello": "world"})

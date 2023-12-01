@@ -38,6 +38,8 @@ class Recipe(models.Model):
   cooking_time      = models.TimeField()
   servings          = models.IntegerField()
   images            = ArrayField( models.URLField(max_length=500, blank=True, null=True), size=4 )
+  video             = models.URLField(max_length=500, default="", blank=True)
+  thumbnail         = models.URLField(max_length=500, default="", blank=True)
   tags              = models.ManyToManyField(Tag)
   nutritional_value = models.JSONField(default=dict)
   chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)

@@ -52,6 +52,8 @@ input CreateRecipeInput{
   servings: Int!
   images: [String]!
   tags: [String!]!
+  video: String
+  thumbnail: String
 }
 
 
@@ -86,6 +88,8 @@ type Recipe{
   images: [String]
   tags: [String]
   nutritionalValue: NutritionalValue
+  video: String
+  thumbnail: String
   chef: Chef
   status: RECIPE_STATUS
   created: String

@@ -56,6 +56,13 @@ def resolve_create_recipe(_, info, input: dict):
       cooking_time = datetime.time( 0, input['cooking_time']['minute'], input['cooking_time']['seconds'] )
     else:
       cooking_time = datetime.time( 0, input['cooking_time']['minute'], 0)
+    
+    if('thumbnail' in input and 'video' not in input):
+      raise Exception("Video must be provided with thumbnail")
+    if('video' in input):
+      video = input['video']
+    if('thumbnail' in input):
+      thumbnail = input['thumbnail']
 
     servings = input['servings']
     images = input['images']
@@ -71,6 +78,8 @@ def resolve_create_recipe(_, info, input: dict):
       servings=servings,
       nutritional_value=nutritional_value,
       images=images,
+      video=video,
+      thumbnail=thumbnail,
       chef=chef
     )
 

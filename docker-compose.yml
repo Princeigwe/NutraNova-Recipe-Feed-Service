@@ -7,7 +7,12 @@ services:
     container_name: recipe-service
     env_file:
       - .env
-    volumes:
-      - .:/code
+    # volumes:
+    #   - .:/code
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /code/
     ports:
       - 2000:2000

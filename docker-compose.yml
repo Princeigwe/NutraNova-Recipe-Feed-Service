@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  web:
+    build:
+      context: .
+    container_name: recipe-service
+    env_file:
+      - .env
+    volumes:
+      - .:/code
+    ports:
+      - 2000:2000

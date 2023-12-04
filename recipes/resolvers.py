@@ -58,21 +58,27 @@ def resolve_create_recipe(_, info, input: dict):
     else:
       cooking_time = datetime.time( 0, input['cooking_time']['minute'], 0)
     
-    if('thumbnail' in input and 'video' not in input):
-      raise Exception("Video must be provided with thumbnail")
-    # if('video' in input):
-    #   video = input['video']
-    # if('thumbnail' in input):
-    #   thumbnail = input['thumbnail']
+    # video and thumbnail data can be given based on session data or input data
     recipe_video_session = request.session.get('recipe_video_detail')
-    print(recipe_video_session)
-    if recipe_video_session:
+    # print(recipe_video_session)
+    if('video' in input):
+      video = input['video']
+      print(video)
+      if('thumbnail' in input):
+        thumbnail = input['thumbnail']
+
+    elif recipe_video_session:
       video = recipe_video_session['video']
       thumbnail = recipe_video_session['thumbnail']
+
+    
+    if('thumbnail' in input and 'video' not in input):
+      raise Exception("Video must be provided with thumbnail")
 
     servings = input['servings']
     images = input['images']
 
+    # del request.session['recipe_video_detail']
 
     recipe = Recipe.objects.create(
       title=title,
@@ -120,6 +126,9 @@ def resolve_create_recipe(_, info, input: dict):
     return{
       "error": e
     }
+  
+  except KeyError:
+    return None
 
 
 def publish_recipe(_, info, publish: bool):

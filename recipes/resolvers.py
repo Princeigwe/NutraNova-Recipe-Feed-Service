@@ -30,6 +30,7 @@ def resolve_create_recipe(_, info, input: dict):
   ingredients, instructions, preparation time, cooking time, servings, nutritional value
   """
   user = get_user(info)
+  request = info.context['request']
 
   try:
 
@@ -59,10 +60,15 @@ def resolve_create_recipe(_, info, input: dict):
     
     if('thumbnail' in input and 'video' not in input):
       raise Exception("Video must be provided with thumbnail")
-    if('video' in input):
-      video = input['video']
-    if('thumbnail' in input):
-      thumbnail = input['thumbnail']
+    # if('video' in input):
+    #   video = input['video']
+    # if('thumbnail' in input):
+    #   thumbnail = input['thumbnail']
+    recipe_video_session = request.session.get('recipe_video_detail')
+    print(recipe_video_session)
+    if recipe_video_session:
+      video = recipe_video_session['video']
+      thumbnail = recipe_video_session['thumbnail']
 
     servings = input['servings']
     images = input['images']

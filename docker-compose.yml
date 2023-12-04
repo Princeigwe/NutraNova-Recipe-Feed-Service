@@ -17,19 +17,19 @@ services:
           target: /code/
     ports:
       - 2000:2000
-    depends_on:
-      - celery
+    # depends_on:
+    #   - celery
   
 
-  celery:
-    build:
-      context: .
-      target: celery
-    container_name: recipe-celery-service
-    env_file:
-      - .env
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /code/
+  # celery:
+  #   build:
+  #     context: .
+  #     target: celery
+  #   container_name: recipe-celery-service
+  #   env_file:
+  #     - .env
+  #   develop:
+  #     watch:
+  #       - action: sync
+  #         path: .
+  #         target: /code/

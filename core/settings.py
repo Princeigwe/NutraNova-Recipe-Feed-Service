@@ -143,9 +143,19 @@ STATIC_URL = 'static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-CELERY_BROKER_URL = os.environ.get("REDIS_URL")
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+ENVIRONMENT = os.environ.get('ENVIRONMENT')
+
+# cache session engine config for request session storage
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL")
+    }
+}
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"

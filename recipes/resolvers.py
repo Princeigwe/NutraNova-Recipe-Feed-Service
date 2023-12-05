@@ -140,11 +140,23 @@ def resolve_edit_recipe(_, info, input):
     recipe_id = input['id']
     existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
 
+    if('thumbnail' in input and 'video' not in input):
+      raise Exception("Video must be provided with thumbnail")
+
     for key,value in input.items():
       if value is not None:
         if(len(value) != 0):
           setattr(existing_recipe, key, value)
 
+    recipe_video_session = request.session.get(f"{user['email']}_recipe_video_detail")
+
+    if ('video' not in input and recipe_video_session):
+      existing_recipe.video = recipe_video_session['video']
+      existing_recipe.thumbnail = recipe_video_session['thumbnail']
+      # if session is present and used, delete session data
+      del request.session[f"{user['email']}_recipe_video_detail"]
+
+    print(model_to_dict(existing_recipe))
     existing_recipe.save()
     tags = existing_recipe.tags.all() # fetch all tags associated to the recipe
 

@@ -56,6 +56,22 @@ input CreateRecipeInput{
   thumbnail: String
 }
 
+input EditRecipeInput{
+  id: String!
+  title: String
+  description: String
+  ingredients: [IngredientsInput]
+  instructions: [String]
+  preparation_time: TimeInput
+  cooking_time: TimeInput
+  servings: Int
+  images: [String]
+  tags: [String]
+  video: String
+  thumbnail: String
+  status: RECIPE_STATUS
+}
+
 
 type Chef{
   username: String
@@ -78,6 +94,7 @@ type NutritionalValue{
 
 
 type Recipe{
+  id: Int
   title: String
   description: String
   ingredients: [Ingredients]
@@ -110,4 +127,5 @@ type Query{
 
 type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
+  editRecipe(input: EditRecipeInput): RecipeResponse
 }

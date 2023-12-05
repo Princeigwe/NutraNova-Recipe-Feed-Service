@@ -73,9 +73,6 @@ def resolve_create_recipe(_, info, input: dict):
       # if session is present nd used, delete session data
       del request.session[f"{user['email']}_recipe_video_detail"]
 
-
-
-    
     if('thumbnail' in input and 'video' not in input):
       raise Exception("Video must be provided with thumbnail")
 
@@ -130,9 +127,45 @@ def resolve_create_recipe(_, info, input: dict):
       "error": e
     }
   
+  # key error on deleting session with non-existing key 
   except KeyError:
     return None
 
 
-def publish_recipe(_, info, publish: bool):
-  pass
+def resolve_edit_recipe(_, info, input):
+  user = get_user(info)
+  request = info.context['request']
+  try:
+    current_chef = Chef.objects.get(username=user['username'])
+    recipe_id = input['id']
+    existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
+
+    for key,value in input.items():
+      if value is not None:
+        if(len(value) != 0):
+          setattr(existing_recipe, key, value)
+
+    existing_recipe.save()
+    tags = existing_recipe.tags.all() # fetch all tags associated to the recipe
+
+    chef_details = {
+      "username": existing_recipe.chef.username,
+			"first_name": existing_recipe.chef.first_name,
+			"last_name": existing_recipe.chef.last_name
+    }
+
+    existing_recipe_response = model_to_dict(existing_recipe, exclude=['tags', 'created', 'published', 'chef']) 
+    existing_recipe_response_tags = [tag.name for tag in tags]
+    existing_recipe_response['tags'] = existing_recipe_response_tags
+    existing_recipe_response['created'] = existing_recipe.created
+    existing_recipe_response['published'] = existing_recipe.published
+    existing_recipe_response['chef'] = chef_details
+
+    return {
+      "message": "Recipe created and saved as draft",
+      "recipe": existing_recipe_response
+    }
+  except Recipe.DoesNotExist as e:
+    return{
+      "error": e
+    }

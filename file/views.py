@@ -76,4 +76,10 @@ def upload_recipe_video_to_cloudinary(request):
     # expire session in 20 minutes; in case not used
     request.session.set_expiry(1200)
 
-    return Response( {"message": "video uploaded", "video": upload_video_thread.video} )
+    return Response( 
+      {
+        "message": "video uploaded", 
+        "video": upload_video_thread.video,
+        "thumbnail": upload_video_thread.thumbnail,
+      }
+    )

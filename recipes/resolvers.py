@@ -30,6 +30,7 @@ def resolve_create_recipe(_, info, input: dict):
   ingredients, instructions, preparation time, cooking time, servings, nutritional value
   """
   user = get_user(info)
+  request = info.context['request']
 
   try:
 
@@ -57,16 +58,29 @@ def resolve_create_recipe(_, info, input: dict):
     else:
       cooking_time = datetime.time( 0, input['cooking_time']['minute'], 0)
     
-    if('thumbnail' in input and 'video' not in input):
-      raise Exception("Video must be provided with thumbnail")
+    # video and thumbnail data can be given based on session data or input data
+    recipe_video_session = request.session.get('recipe_video_detail')
+    # print(recipe_video_session)
     if('video' in input):
       video = input['video']
-    if('thumbnail' in input):
-      thumbnail = input['thumbnail']
+      print(video)
+      if('thumbnail' in input):
+        thumbnail = input['thumbnail']
+
+    elif recipe_video_session:
+      video = recipe_video_session['video']
+      thumbnail = recipe_video_session['thumbnail']
+      # if session is present nd used, delete session data
+      del request.session['recipe_video_detail']
+
+
+
+    
+    if('thumbnail' in input and 'video' not in input):
+      raise Exception("Video must be provided with thumbnail")
 
     servings = input['servings']
     images = input['images']
-
 
     recipe = Recipe.objects.create(
       title=title,
@@ -78,10 +92,13 @@ def resolve_create_recipe(_, info, input: dict):
       servings=servings,
       nutritional_value=nutritional_value,
       images=images,
-      video=video,
-      thumbnail=thumbnail,
+      # if video and thumbnail is defined in local scope
+      video=video if 'video' in locals() else None,
+      thumbnail=thumbnail if 'thumbnail' in locals() else None,
       chef=chef
     )
+
+    print(model_to_dict(recipe))
 
     for tag_name in input['tags']:
       tag = get_tag(tag_name)
@@ -114,6 +131,9 @@ def resolve_create_recipe(_, info, input: dict):
     return{
       "error": e
     }
+  
+  except KeyError:
+    return None
 
 
 def publish_recipe(_, info, publish: bool):

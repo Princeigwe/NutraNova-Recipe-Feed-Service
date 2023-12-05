@@ -7,6 +7,8 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary
 
+from celery import shared_task
+
 cloudinary.config(
   cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME"),
   api_key = os.environ.get("CLOUDINARY_API_KEY"),
@@ -14,6 +16,7 @@ cloudinary.config(
 )
 
 
+# @shared_task()
 def upload_video(file):
   response = cloudinary.uploader.upload_large(file,resource_type = "video", use_filename=True, unique_filename=False)
   return response

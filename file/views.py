@@ -2,14 +2,14 @@ from django.shortcuts import render
 from utils.compress import compress_image
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, parser_classes, renderer_classes
+from rest_framework.decorators import api_view, parser_classes
 from django.core.files.storage import FileSystemStorage
 from utils.request_authz import jwt_authorization
 from rest_framework.exceptions import ParseError
 from django.conf import settings
 from utils.upload_image import upload_and_get_image_details
 from django.views.decorators.csrf import csrf_exempt
-from utils.upload_video import upload_video, upload_video_and_thumbnail
+from threads.upload_video_thread import UploadVideoThread
 
 # Create your views here.
 
@@ -54,11 +54,32 @@ def upload_recipe_video_to_cloudinary(request):
     if any( char.isspace() for char in video.name): # checking for gaps in the file name
       video.name = video.name.replace(' ', '_')
   
-    default_storage = settings.MEDIA_ROOT
-    fs = FileSystemStorage(location=default_storage)
+    # default_storage = settings.MEDIA_ROOT
+    # fs = FileSystemStorage(location=default_storage)
+    fs = FileSystemStorage()
     file = fs.save(video.name, video)
     file_url = fs.url(file)
 
     video_path = f"{settings.BASE_DIR}{file_url}"
-    upload = upload_video_and_thumbnail(video_path)
-    return Response(upload)
+
+    # create extra thread to perform upload video operation on it
+    upload_video_thread = UploadVideoThread(video_path)
+    upload_video_thread.daemon = True # make thread daemonic
+    upload_video_thread.start() # run thread
+    upload_video_thread.join() # wait for daemonic thread to execute
+
+    request.session['recipe_video_detail'] = {
+      "video": upload_video_thread.video,
+      "thumbnail": upload_video_thread.thumbnail
+    }
+
+    # expire session in 20 minutes; in case not used
+    request.session.set_expiry(1200)
+
+    return Response( 
+      {
+        "message": "video uploaded", 
+        "video": upload_video_thread.video,
+        "thumbnail": upload_video_thread.thumbnail,
+      }
+    )

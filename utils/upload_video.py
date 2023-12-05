@@ -7,7 +7,6 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary
 
-from celery import shared_task
 
 cloudinary.config(
   cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME"),

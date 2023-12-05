@@ -59,7 +59,7 @@ def resolve_create_recipe(_, info, input: dict):
       cooking_time = datetime.time( 0, input['cooking_time']['minute'], 0)
     
     # video and thumbnail data can be given based on session data or input data
-    recipe_video_session = request.session.get('recipe_video_detail')
+    recipe_video_session = request.session.get(f"{user['email']}_recipe_video_detail")
     # print(recipe_video_session)
     if('video' in input):
       video = input['video']
@@ -71,7 +71,7 @@ def resolve_create_recipe(_, info, input: dict):
       video = recipe_video_session['video']
       thumbnail = recipe_video_session['thumbnail']
       # if session is present nd used, delete session data
-      del request.session['recipe_video_detail']
+      del request.session[f"{user['email']}_recipe_video_detail"]
 
 
 
@@ -97,8 +97,6 @@ def resolve_create_recipe(_, info, input: dict):
       thumbnail=thumbnail if 'thumbnail' in locals() else None,
       chef=chef
     )
-
-    print(model_to_dict(recipe))
 
     for tag_name in input['tags']:
       tag = get_tag(tag_name)

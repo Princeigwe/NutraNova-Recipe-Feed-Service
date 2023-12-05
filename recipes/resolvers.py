@@ -70,6 +70,10 @@ def resolve_create_recipe(_, info, input: dict):
     elif recipe_video_session:
       video = recipe_video_session['video']
       thumbnail = recipe_video_session['thumbnail']
+      # if session is present nd used, delete session data
+      del request.session['recipe_video_detail']
+
+
 
     
     if('thumbnail' in input and 'video' not in input):
@@ -77,8 +81,6 @@ def resolve_create_recipe(_, info, input: dict):
 
     servings = input['servings']
     images = input['images']
-
-    # del request.session['recipe_video_detail']
 
     recipe = Recipe.objects.create(
       title=title,
@@ -90,10 +92,13 @@ def resolve_create_recipe(_, info, input: dict):
       servings=servings,
       nutritional_value=nutritional_value,
       images=images,
-      video=video,
-      thumbnail=thumbnail,
+      # if video and thumbnail is defined in local scope
+      video=video if 'video' in locals() else None,
+      thumbnail=thumbnail if 'thumbnail' in locals() else None,
       chef=chef
     )
+
+    print(model_to_dict(recipe))
 
     for tag_name in input['tags']:
       tag = get_tag(tag_name)

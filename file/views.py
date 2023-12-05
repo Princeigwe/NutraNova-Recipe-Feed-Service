@@ -10,6 +10,8 @@ from django.conf import settings
 from utils.upload_image import upload_and_get_image_details
 from django.views.decorators.csrf import csrf_exempt
 from threads.upload_video_thread import UploadVideoThread
+from utils.get_user import get_user_rest
+
 
 # Create your views here.
 
@@ -47,8 +49,10 @@ def upload_recipe_image_to_cloudinary(request):
 
 
 @api_view(['POST'])
+@jwt_authorization
 @parser_classes([MultiPartParser])
 def upload_recipe_video_to_cloudinary(request):
+  user = get_user_rest(request)
   video = request.FILES['video'] if 'video' in request.FILES else None
   if video:
     if any( char.isspace() for char in video.name): # checking for gaps in the file name
@@ -68,7 +72,7 @@ def upload_recipe_video_to_cloudinary(request):
     upload_video_thread.start() # run thread
     upload_video_thread.join() # wait for daemonic thread to execute
 
-    request.session['recipe_video_detail'] = {
+    request.session[f"{user['email']}_recipe_video_detail"] = {
       "video": upload_video_thread.video,
       "thumbnail": upload_video_thread.thumbnail
     }

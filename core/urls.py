@@ -15,16 +15,23 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.conf.urls.static import static
+from django.urls import path, include
 from ariadne_django.views import GraphQLView
 from .schema import schema
+from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('file/', include('file.urls')),
 
-    path('graphql/', GraphQLView.as_view(schema=schema), name='graphql')
+    path('graphql/', GraphQLView.as_view(schema=schema), name='graphql'),
 ]
 
 
-admin.site.site_header = "NutraNove Recipe Feed Admin"
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+admin.site.site_header = "NutraNova Recipe Feed Admin"
 

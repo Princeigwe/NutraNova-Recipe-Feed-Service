@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-$&vhg-f)r%92=v1ngplqdq83&x0$(qbb#299**uks+pa2cg!9l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -43,10 +43,13 @@ INSTALLED_APPS = [
 
     #local apps
     "recipes.apps.RecipesConfig",
+    "file.apps.FileConfig",
 
 
     # 3rd party apps
     "ariadne_django",
+    "cloudinary",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -137,7 +140,22 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+ENVIRONMENT = os.environ.get('ENVIRONMENT')
+
+# cache session engine config for request session storage
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL")
+    }
+}
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"

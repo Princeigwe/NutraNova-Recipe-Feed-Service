@@ -11,6 +11,7 @@ from utils.upload_image import upload_and_get_image_details
 from django.views.decorators.csrf import csrf_exempt
 from threads.upload_video_thread import UploadVideoThread
 from utils.get_user import get_user_rest
+import os
 
 
 # Create your views here.
@@ -39,6 +40,9 @@ def upload_recipe_image_to_cloudinary(request):
       upload = upload_and_get_image_details(compressed_image)
       uploaded_image_url = upload['secure_url']
       recipe_images.append(uploaded_image_url)
+
+      # delete image from media directory after upload
+      os.remove(image_path)
 
     return Response(
       {
@@ -76,6 +80,9 @@ def upload_recipe_video_to_cloudinary(request):
       "video": upload_video_thread.video,
       "thumbnail": upload_video_thread.thumbnail
     }
+
+    # delete image from media directory after upload
+    os.remove(video_path)
 
     # expire session in 20 minutes; in case not used
     request.session.set_expiry(1200)

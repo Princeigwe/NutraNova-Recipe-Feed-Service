@@ -5,6 +5,7 @@ load_dotenv()
 import json
 
 
+
 def consume_and_update_chef_username():
   print("Kafka consumer to be initialized")
 
@@ -31,20 +32,18 @@ def consume_and_update_chef_username():
     api_version=(0, 10, 2)
 )
 
-  # for message in consumer:
-  #   print(message.value)
-  #   return{
-  #     "topic": message.topic,
-  #     "message": message.value
-  #   }
 
   try:
     for message in consumer:
       print(f"Received message: {message.value}")
+      # import statement for model is placed here because of the "Apps aren't loaded yet" message on Django server startup with background 
+      from recipes.models import Chef
+      chef = Chef.objects.get(username=message.value['old_username'])
+      chef.username = message.value['new_username']
+      chef.save()
+      print(f"{chef.first_name} username is now {chef.username}")
   except KeyboardInterrupt:
     pass
   finally:
     consumer.close()
   
-
-# consume_and_update_chef_username()

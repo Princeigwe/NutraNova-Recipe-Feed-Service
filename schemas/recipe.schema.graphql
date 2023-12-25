@@ -1,47 +1,69 @@
+"These are the choices for various units of ingredients measurements"
 enum INGREDIENT_MEASUREMENT_UNITS{
+  "Ounce"
   oz
+  "Pound"
   lb
+  "Gram"
   g
+  "Kilogram"
   kg
+  "Tablespoon"
   Tbsp
+  "Teaspoon"
   tsp
+  "Cup"
   c
+  "Pint"
   pt
+  "Gallon"
   gal
+  "Liter"
   l
+  "Mililiter"
   mL
+  "Dozen"
   doz
+  "Quart"
   qt
+  "Loaf"
   loaf
+  "Bar"
   bar
+  "Package"
   package
+  "Piece"
   piece
 }
 
+"Ingredient schema. "
 type Ingredients{
   name: String
   quantity: Int
   unit: String
 }
 
+"Ingredients inputted for recipe creation or modification would be following this schema"
 input IngredientsInput{
   name: String!
   quantity: Int!
   unit: INGREDIENT_MEASUREMENT_UNITS
 }
 
+"Recipe status"
 enum RECIPE_STATUS{
   DRAFT
   PUBLISHED
 }
 
+"Time input schema for cooking and preparation time"
 input TimeInput{
   hour: Int
   minute: Int!
   seconds: Int
 }
 
-
+"Schema representing data body for recipe creation"
 input CreateRecipeInput{
   title: String!
   description: String!
@@ -56,6 +78,7 @@ input CreateRecipeInput{
   thumbnail: String
 }
 
+"Schema representing data body for recipe modification"
 input EditRecipeInput{
   id: String!
   title: String
@@ -72,7 +95,7 @@ input EditRecipeInput{
   status: RECIPE_STATUS
 }
 
-
+"Chef schema on response"
 type Chef{
   username: String
   first_name: String
@@ -80,6 +103,7 @@ type Chef{
 }
 
 
+"Schema type for recipe nutritional value"
 type NutritionalValue{
   calories: String  # using String type because of the units attached to the numbers
   fat: String
@@ -92,7 +116,7 @@ type NutritionalValue{
   potassium: String
 }
 
-
+"Recipe schema on response"
 type Recipe{
   id: Int
   title: String
@@ -113,18 +137,19 @@ type Recipe{
   published: String
 }
 
+"Response for recipe mutation and query operations"
 type RecipeResponse{
   message: String
   recipe: Recipe
   error: String
 }
 
-
-
+"The query resolvers"
 type Query{
   recipeTags: [String]!
 }
 
+"The mutation resolvers"
 type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse

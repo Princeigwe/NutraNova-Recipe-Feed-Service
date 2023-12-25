@@ -55,20 +55,20 @@ jobs:
           command: |
             rover subgraph check --help
             rover docs open api-keys
-      - when:
-          condition:
-            equal: [ staging, << pipeline.git.branch >> ]
-          steps:
-            - run:
-                name: Create SuperGraph Variant
-                command: rover subgraph publish nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
-            - run:
-                name: Schema Check
-                command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
+      # - when:
+      #     condition:
+      #       equal: [ staging, << pipeline.git.branch >> ]
+      #     steps:
+      #       - run:
+      #           name: Create SuperGraph Variant
+      #           command: rover subgraph publish nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+      #       - run:
+      #           name: Schema Check
+      #           command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
 
-            - run:
-                name: Publish Schema
-                command: rover subgraph publish nutranova-super-graph@staging --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+      #       - run:
+      #           name: Publish Schema
+      #           command: rover subgraph publish nutranova-super-graph@staging --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
 
 workflows:
   build-test-deploy:

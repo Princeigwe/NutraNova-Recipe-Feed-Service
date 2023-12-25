@@ -39,6 +39,34 @@ jobs:
                   docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD docker.io
                   docker push $DOCKER_USERNAME/nutranova_recipe_service:latest
 
+  update-subgraph-schema:
+    environment:
+      APOLLO_KEY: $APOLLO_KEY
+    executor: node/default
+    steps:
+      - run:
+          name: Install Rover
+          command: |
+            curl -sSL https://rover.apollo.dev/nix/latest | sh
+            echo 'export PATH=$HOME/.rover/bin:$PATH' >> $BASH_ENV 
+      - checkout
+      - run:
+          name: Rover Help
+          command: rover subgraph check --help
+      - when:
+          condition:
+            equal: [ staging, << pipeline.git.branch >> ]
+          steps:
+            - run:
+                name: Create SuperGraph Variant
+                command: rover subgraph publish nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+            - run:
+                name: Schema Check
+                command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
+
+            - run:
+                name: Publish Schema
+                command: rover subgraph publish nutranova-super-graph@staging --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
 
 workflows:
   build-test-deploy:
@@ -49,3 +77,7 @@ workflows:
             - DOCKER_AUTH
           requires:
             - install-python-dependencies-and-test-application
+      - update-subgraph-schema:
+          context: NutraNova
+          requires:
+            - build-and-deploy-docker-image

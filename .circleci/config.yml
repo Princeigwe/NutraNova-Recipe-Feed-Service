@@ -52,7 +52,9 @@ jobs:
       - checkout
       - run:
           name: Rover Help
-          command: rover subgraph check --help
+          command: |
+            rover subgraph check --help
+            rover docs open api-key
       - when:
           condition:
             equal: [ staging, << pipeline.git.branch >> ]

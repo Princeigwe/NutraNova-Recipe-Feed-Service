@@ -15,9 +15,37 @@ jobs:
       - run:
           name: Test API
           command: python3 -m pytest -vv
+  
+  build-and-deploy-docker-image:
+    docker:
+      - image: cimg/python:3.12.1
+        auth:
+          username: $DOCKER_USERNAME
+          password: $DOCKER_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - when:
+          condition:
+            equal: [staging, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: Build Docker image
+                command: ocker build -t $DOCKER_USERNAME/nutranova_recipe_service:latest .
+            - run:
+                name: Push image
+                command: |
+                  docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD docker.io
+                  docker push $DOCKER_USERNAME/nutranova_recipe_service:latest
 
 
 workflows:
   build-test-deploy:
     jobs:
       - install-python-dependencies-and-test-application
+      - build-and-deploy-docker-image:
+          context:
+            - DOCKER_AUTH
+          requires:
+            - install-python-dependencies-and-test-application

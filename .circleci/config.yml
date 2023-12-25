@@ -40,9 +40,9 @@ jobs:
                   docker push $DOCKER_USERNAME/nutranova_recipe_service:latest
 
   update-subgraph-schema:
+    executor: node/default
     environment:
       APOLLO_KEY: $APOLLO_KEY
-    executor: node/default
     steps:
       - run:
           name: Install Rover

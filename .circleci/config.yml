@@ -54,7 +54,7 @@ jobs:
           name: Rover Help
           command: |
             rover subgraph check --help
-            rover docs open api-key
+            rover docs open $APOLLO_KEY
       - when:
           condition:
             equal: [ staging, << pipeline.git.branch >> ]

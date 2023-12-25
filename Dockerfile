@@ -15,7 +15,7 @@ COPY . /code/
 RUN mkdir /code/media/
 
 # starting django server on container startup
-# CMD ["python3", "manage.py", "runserver", "0.0.0.0:2000"]
-CMD ["python3", "manage.py", "runserver"]
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:2000"]
+# CMD ["python3", "manage.py", "runserver"]
 
 

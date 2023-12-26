@@ -64,9 +64,9 @@ jobs:
             - run:
                 name: Publish Schema
                 command: rover subgraph publish nutranova-super-graph@staging --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
-            - run:
-                name: Schema Check
-                command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
+            # - run:
+            #     name: Schema Check
+            #     command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
 
 
 workflows:

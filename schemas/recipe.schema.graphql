@@ -1,42 +1,42 @@
 "These are the choices for various units of ingredients measurements"
 enum INGREDIENT_MEASUREMENT_UNITS{
   "Ounce"
-  oz
+  OZ
   "Pound"
-  lb
+  LB
   "Gram"
-  g
+  G
   "Kilogram"
-  kg
+  KG
   "Tablespoon"
-  Tbsp
+  TBSP
   "Teaspoon"
-  tsp
+  TSP
   "Cup"
-  c
+  C
   "Pint"
-  pt
+  PT
   "Gallon"
-  gal
+  GAL
   "Liter"
-  l
+  L
   "Mililiter"
-  mL
+  ML
   "Dozen"
-  doz
+  DOZ
   "Quart"
-  qt
+  QT
   "Loaf"
-  loaf
+  LOAF
   "Bar"
-  bar
+  BAR
   "Package"
-  package
+  PACKAGE
   "Piece"
-  piece
+  PIECE
 }
 
-"Ingredient schema. "
+"Ingredient schema."
 type Ingredients{
   name: String
   quantity: Int

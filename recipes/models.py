@@ -42,7 +42,7 @@ class Recipe(models.Model):
   thumbnail         = models.URLField(max_length=500, default="", blank=True, null= True)
   tags              = models.ManyToManyField(Tag)
   nutritional_value = models.JSONField(default=dict)
-  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='recipes')
   status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT")
   created           = models.DateTimeField(auto_now_add=True)
   published         = models.DateTimeField(auto_now=True)

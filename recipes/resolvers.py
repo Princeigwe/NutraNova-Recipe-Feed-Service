@@ -193,3 +193,42 @@ def resolve_edit_recipe(_, info, input):
     return{
       "error": e
     }
+
+
+
+# make an API request to the user service, in order to get the list of usernames of followings
+# cache the result for 30 minutes
+# select a random list of usernames from the result, and for each username, fetch the latest recipe created by the chef
+# append each data to a response list and return it.
+# cache the response for 15 minutes
+# repeat from 1 and 2 when user makes another recipe feed request
+
+def resolve_recipe_feed(_, info):
+  user = get_user(info)
+  request = info.context['request']
+  access_token = get_access_token(request)
+
+  user_followings = fetch_user_followings(user['username'], access_token)
+  print( user_followings['data']['userFollowing']['users'] )
+  # print( user_followings)
+  users = user_followings['data']['userFollowing']['users']
+  feed = []
+  if len(users) == 0:
+    return {
+      "message": "Empty. Follow users to populate your feed."
+    }
+  else:
+    for user in users:
+      chef = Chef.objects.get(username=user['username'])
+      chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude='chef')
+      chef_detail = {
+        "username": chef.username,
+        "first_name": chef.first_name,
+        "last_name": chef.last_name
+      }
+      chef_latest_recipe['chef'] = chef_detail
+      feed.append(chef_latest_recipe)
+    return{
+      "message": "Recipe feed",
+      "feed": feed
+    }

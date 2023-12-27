@@ -144,9 +144,15 @@ type RecipeResponse{
   error: String
 }
 
+type RecipeFeedResponse{
+  message: String
+  feed: [Recipe]
+}
+
 "The query resolvers"
 type Query{
   recipeTags: [String]!
+  recipeFeed: RecipeFeedResponse
 }
 
 "The mutation resolvers"

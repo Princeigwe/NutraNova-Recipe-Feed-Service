@@ -137,7 +137,7 @@ type Recipe{
   published: String
 }
 
-"Response for recipe mutation and query operations"
+"Response for single recipe mutation and query operation"
 type RecipeResponse{
   message: String
   recipe: Recipe

@@ -5,6 +5,8 @@ from django.forms.models import model_to_dict
 from utils.nutritional_value import calculated_nutritional_value
 from os.path import splitext, basename
 from threads.delete_video_thread import DeleteVideoThread
+from utils.user_service_comm import fetch_user_followings
+from utils.get_user import get_access_token
 
 
 def get_tag(name):

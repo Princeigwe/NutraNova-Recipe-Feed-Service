@@ -7,6 +7,7 @@ from os.path import splitext, basename
 from threads.delete_video_thread import DeleteVideoThread
 from utils.user_service_comm import fetch_user_followings
 from utils.get_user import get_access_token
+from django.core.cache import cache
 
 
 def get_tag(name):
@@ -208,17 +209,25 @@ def resolve_recipe_feed(_, info):
   request = info.context['request']
   access_token = get_access_token(request)
 
-  user_followings = fetch_user_followings(user['username'], access_token)
-  print( user_followings['data']['userFollowing']['users'] )
-  # print( user_followings)
-  users = user_followings['data']['userFollowing']['users']
+  existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
+  if existing_user_followings_cache == None:
+    print("cache does not exist")
+    user_followings = fetch_user_followings(user['username'], access_token)
+    print( user_followings['data']['userFollowing']['users'] )
+    # print( user_followings)
+    users = user_followings['data']['userFollowing']['users']
+    user_followings_cache = cache.set( key=f"{user['username']}_followings", value=users, timeout=120 ) # cache timeout set to 120 seconds
+  
+
+  user_followings_cache = cache.get(f"{user['username']}_followings")
+  print("cache:", user_followings_cache)
   feed = []
-  if len(users) == 0:
+  if len(user_followings_cache) == 0:
     return {
       "message": "Empty. Follow users to populate your feed."
     }
   else:
-    for user in users:
+    for user in user_followings_cache:
       chef = Chef.objects.get(username=user['username'])
       chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude='chef')
       chef_detail = {

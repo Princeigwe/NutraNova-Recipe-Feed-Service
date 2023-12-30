@@ -209,35 +209,57 @@ def resolve_recipe_feed(_, info):
   request = info.context['request']
   access_token = get_access_token(request)
 
-  existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
-  if existing_user_followings_cache == None:
-    print("cache does not exist")
-    user_followings = fetch_user_followings(user['username'], access_token)
-    print( user_followings['data']['userFollowing']['users'] )
-    # print( user_followings)
-    users = user_followings['data']['userFollowing']['users']
-    user_followings_cache = cache.set( key=f"{user['username']}_followings", value=users, timeout=120 ) # cache timeout set to 120 seconds
-  
+  # existing_feed_cache = cache.get(f"{user['username']}_recipe_feed")
+  existing_feed_cache = cache.get(f"recipe_feed")
 
-  user_followings_cache = cache.get(f"{user['username']}_followings")
-  print("cache:", user_followings_cache)
-  feed = []
-  if len(user_followings_cache) == 0:
-    return {
-      "message": "Empty. Follow users to populate your feed."
-    }
-  else:
-    for user in user_followings_cache:
-      chef = Chef.objects.get(username=user['username'])
-      chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude='chef')
-      chef_detail = {
-        "username": chef.username,
-        "first_name": chef.first_name,
-        "last_name": chef.last_name
+  if existing_feed_cache == None:
+    print("existing feed cache does not exist")
+
+    existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
+    if existing_user_followings_cache == None:
+      print("cache does not exist")
+      user_followings = fetch_user_followings(user['username'], access_token)
+      print( user_followings['data']['userFollowing']['users'] )
+      # print( user_followings)
+      users = user_followings['data']['userFollowing']['users']
+      user_followings_cache = cache.set( key=f"{user['username']}_followings", value=users, timeout=120 ) # cache timeout set to 120 seconds
+    
+
+    user_followings_cache = cache.get(f"{user['username']}_followings")
+    print("cache:", user_followings_cache)
+    feed = []
+    if len(user_followings_cache) == 0:
+      return {
+        "message": "Empty. Follow users to populate your feed."
       }
-      chef_latest_recipe['chef'] = chef_detail
-      feed.append(chef_latest_recipe)
-    return{
-      "message": "Recipe feed",
-      "feed": feed
-    }
+    else:
+      for user in user_followings_cache:
+        chef = Chef.objects.get(username=user['username'])
+        chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude='chef')
+        chef_detail = {
+          "username": chef.username,
+          "first_name": chef.first_name,
+          "last_name": chef.last_name
+        }
+        chef_latest_recipe['chef'] = chef_detail
+        feed.append(chef_latest_recipe)
+        
+        # cache_data = { "message": "Recipe feed", "feed": feed }
+        # cache.set( key=f"{user['username']}_recipe_feed", value= cache_data, timeout=180 )
+        # print("cache created")
+      cache_data = { "message": "Recipe feed", "feed": feed }
+      # cache.set( key=f"{user['username']}_recipe_feed", value= cache_data, timeout=180 )
+      cache.set( key=f"recipe_feed", value= cache_data, timeout=180 )
+      print("cache created")
+      return{
+        "message": "Recipe feed",
+        "feed": feed
+      }
+  
+  # feed_cache = cache.get(f"{user['username']}_recipe_feed")
+  feed_cache = cache.get(f"recipe_feed")
+  print("data from existing cache")
+  return{
+    "message": feed_cache['message'],
+    "feed": feed_cache['feed']
+  }

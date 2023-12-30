@@ -240,13 +240,15 @@ def resolve_recipe_feed(_, info):
     else:
       for user in user_followings_cache:
         chef = Chef.objects.get(username=user['username'])
-        chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude='chef')
+        chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude=['created', 'published', 'chef'])
         chef_detail = {
           "username": chef.username,
           "first_name": chef.first_name,
           "last_name": chef.last_name
         }
         chef_latest_recipe['chef'] = chef_detail
+        chef_latest_recipe['created'] = chef.recipes.latest('published').created
+        chef_latest_recipe['published'] = chef.recipes.latest('published').published
         feed.append(chef_latest_recipe)
         
       cache_data = { "message": "Recipe feed", "feed": feed }
@@ -260,6 +262,7 @@ def resolve_recipe_feed(_, info):
   
   feed_cache = cache.get(f"{username}recipe_feed")
   print(f"data from existing {username} feed cache")
+  
   return{
     "message": feed_cache['message'],
     "feed": feed_cache['feed']

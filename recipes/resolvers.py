@@ -206,18 +206,18 @@ def resolve_edit_recipe(_, info, input):
 
 def resolve_recipe_feed(_, info):
   user = get_user(info)
+  username = user['username'] ## for some reason, i couldn't get feed cache key before setting this variable. reminder: DO NOT DELETE.
   request = info.context['request']
   access_token = get_access_token(request)
 
-  # existing_feed_cache = cache.get(f"{user['username']}_recipe_feed")
-  existing_feed_cache = cache.get(f"recipe_feed")
+  existing_feed_cache = cache.get(f"{username}recipe_feed")
 
   if existing_feed_cache == None:
-    print("existing feed cache does not exist")
+    print(f"{username} existing recipe feed cache does not exist")
 
     existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
     if existing_user_followings_cache == None:
-      print("cache does not exist")
+      print(f" {username} following cache does not exist")
       user_followings = fetch_user_followings(user['username'], access_token)
       print( user_followings['data']['userFollowing']['users'] )
       # print( user_followings)
@@ -226,7 +226,7 @@ def resolve_recipe_feed(_, info):
     
 
     user_followings_cache = cache.get(f"{user['username']}_followings")
-    print("cache:", user_followings_cache)
+    print(f" {username} following cache:", user_followings_cache)
     feed = []
     if len(user_followings_cache) == 0:
       return {
@@ -244,21 +244,17 @@ def resolve_recipe_feed(_, info):
         chef_latest_recipe['chef'] = chef_detail
         feed.append(chef_latest_recipe)
         
-        # cache_data = { "message": "Recipe feed", "feed": feed }
-        # cache.set( key=f"{user['username']}_recipe_feed", value= cache_data, timeout=180 )
-        # print("cache created")
       cache_data = { "message": "Recipe feed", "feed": feed }
-      # cache.set( key=f"{user['username']}_recipe_feed", value= cache_data, timeout=180 )
-      cache.set( key=f"recipe_feed", value= cache_data, timeout=180 )
-      print("cache created")
+      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
+      print(f"{username} feed cache created")
+
       return{
         "message": "Recipe feed",
         "feed": feed
       }
   
-  # feed_cache = cache.get(f"{user['username']}_recipe_feed")
-  feed_cache = cache.get(f"recipe_feed")
-  print("data from existing cache")
+  feed_cache = cache.get(f"{username}recipe_feed")
+  print(f"data from existing {username} feed cache")
   return{
     "message": feed_cache['message'],
     "feed": feed_cache['feed']

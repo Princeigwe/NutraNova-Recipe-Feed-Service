@@ -196,7 +196,7 @@ def resolve_edit_recipe(_, info, input):
     }
 
 
-
+# RECIPE FEED THOUGHT PROCESS:
 # make an API request to the user service, in order to get the list of usernames of followings
 # cache the result for 30 minutes
 # select a random list of usernames from the result, and for each username, fetch the latest recipe created by the chef
@@ -205,6 +205,11 @@ def resolve_edit_recipe(_, info, input):
 # repeat from 1 and 2 when user makes another recipe feed request
 
 def resolve_recipe_feed(_, info):
+  """
+  The `resolve_recipe_feed` function retrieves a user's recipe feed from the cache, and if it doesn't
+  exist, it fetches the user's followings, retrieves the latest recipe from each following chef, and
+  populates the feed with the recipes.
+  """
   user = get_user(info)
   username = user['username'] ## for some reason, i couldn't get feed cache key before setting this variable. reminder: DO NOT DELETE.
   request = info.context['request']

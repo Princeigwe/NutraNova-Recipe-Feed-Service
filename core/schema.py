@@ -6,6 +6,7 @@ type_defs = load_schema_from_path('schemas')
 query = QueryType()
 query.set_field("recipeTags", resolvers.resolve_recipe_tags)
 query.set_field("recipeFeed", resolvers.resolve_recipe_feed)
+query.set_field("singleRecipe", resolvers.resolve_single_recipe)
 
 mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)

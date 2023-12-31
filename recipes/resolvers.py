@@ -267,3 +267,15 @@ def resolve_recipe_feed(_, info):
     "message": feed_cache['message'],
     "feed": feed_cache['feed']
   }
+
+
+def resolve_single_recipe(_, info, pk):
+  # user = get_user(info)
+  try:
+    recipe = Recipe.objects.get(pk=pk)
+    return{
+      "message": "Recipe",
+      "recipe": recipe
+    }
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe does not exist")

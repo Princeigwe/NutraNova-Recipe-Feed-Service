@@ -1,0 +1,85 @@
+version: 2.1
+orbs:
+  node: circleci/node@5.1.0
+  python: circleci/python@2.1.1
+
+jobs:
+  
+  install-python-dependencies-and-test-application:
+    executor: python/default
+    environment:
+      APOLLO_KEY: $APOLLO_KEY
+    steps:
+      - checkout
+      - python/install-packages:
+          pip-dependency-file: requirements.txt
+          pkg-manager: pip
+      - run:
+          name: Test API
+          command: python3 -m pytest -vv
+  
+  build-and-deploy-docker-image:
+    docker:
+      - image: cimg/python:3.12.1
+        auth:
+          username: $DOCKER_USERNAME
+          password: $DOCKER_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - when:
+          condition:
+            equal: [staging, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: Build Docker image
+                command: docker build -t $DOCKER_USERNAME/nutranova_recipe_service:latest .
+            - run:
+                name: Push image
+                command: |
+                  docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD docker.io
+                  docker push $DOCKER_USERNAME/nutranova_recipe_service:latest
+
+  update-subgraph-schema:
+    executor: node/default
+    steps:
+      - run:
+          name: Install Rover
+          command: |
+            curl -sSL https://rover.apollo.dev/nix/latest | sh
+            echo 'export PATH=$HOME/.rover/bin:$PATH' >> $BASH_ENV 
+      - checkout
+      - run:
+          name: Rover Help
+          command: |
+            rover subgraph check --help
+      - when:
+          condition:
+            equal: [ staging, << pipeline.git.branch >> ]
+          steps:
+            - run:
+                name: Create SuperGraph Variant
+                command: rover subgraph publish nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+            - run:
+                name: Publish Schema
+                command: rover subgraph publish nutranova-super-graph@staging --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+            # - run:
+            #     name: Schema Check
+            #     command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
+
+
+workflows:
+  build-test-deploy:
+    jobs:
+      - install-python-dependencies-and-test-application
+      # - build-and-deploy-docker-image:
+      #     context:
+      #       - DOCKER_AUTH
+      #     requires:
+      #       - install-python-dependencies-and-test-application
+      - update-subgraph-schema:
+          context: NutraNova
+          # requires:
+          #   - build-and-deploy-docker-image
+          

@@ -5,6 +5,9 @@ from django.forms.models import model_to_dict
 from utils.nutritional_value import calculated_nutritional_value
 from os.path import splitext, basename
 from threads.delete_video_thread import DeleteVideoThread
+from utils.user_service_comm import fetch_user_followings
+from utils.get_user import get_access_token
+from django.core.cache import cache
 
 
 def get_tag(name):
@@ -191,3 +194,99 @@ def resolve_edit_recipe(_, info, input):
     return{
       "error": e
     }
+
+
+# RECIPE FEED THOUGHT PROCESS:
+# make an API request to the user service, in order to get the list of usernames of followings
+# cache the result for 30 minutes
+# select a random list of usernames from the result, and for each username, fetch the latest recipe created by the chef
+# append each data to a response list and return it.
+# cache the response for 15 minutes
+# repeat from 1 and 2 when user makes another recipe feed request
+
+def resolve_recipe_feed(_, info):
+  """
+  The `resolve_recipe_feed` function retrieves a user's recipe feed from the cache, and if it doesn't
+  exist, it fetches the user's followings, retrieves the latest recipe from each following chef, and
+  populates the feed with the recipes.
+  """
+  user = get_user(info)
+  username = user['username'] ## for some reason, i couldn't get feed cache key before setting this variable. reminder: DO NOT DELETE.
+  request = info.context['request']
+  access_token = get_access_token(request)
+
+  existing_feed_cache = cache.get(f"{username}recipe_feed")
+
+  if existing_feed_cache == None:
+    print(f"{username} existing recipe feed cache does not exist")
+
+    existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
+    if existing_user_followings_cache == None:
+      print(f" {username} following cache does not exist")
+      user_followings = fetch_user_followings(user['username'], access_token)
+      print( user_followings['data']['userFollowing']['users'] )
+      # print( user_followings)
+      users = user_followings['data']['userFollowing']['users']
+      user_followings_cache = cache.set( key=f"{user['username']}_followings", value=users, timeout=120 ) # cache timeout set to 120 seconds
+    
+
+    user_followings_cache = cache.get(f"{user['username']}_followings")
+    print(f" {username} following cache:", user_followings_cache)
+    feed = []
+    if len(user_followings_cache) == 0:
+      return {
+        "message": "Empty. Follow users to populate your feed."
+      }
+    else:
+      for user in user_followings_cache:
+        chef = Chef.objects.get(username=user['username'])
+        chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude=['created', 'published', 'chef'])
+        chef_detail = {
+          "username": chef.username,
+          "first_name": chef.first_name,
+          "last_name": chef.last_name
+        }
+        chef_latest_recipe['chef'] = chef_detail
+        chef_latest_recipe['created'] = chef.recipes.latest('published').created
+        chef_latest_recipe['published'] = chef.recipes.latest('published').published
+        feed.append(chef_latest_recipe)
+        
+      cache_data = { "message": "Recipe feed", "feed": feed }
+      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
+      print(f"{username} feed cache created")
+
+      return{
+        "message": "Recipe feed",
+        "feed": feed
+      }
+  
+  feed_cache = cache.get(f"{username}recipe_feed")
+  print(f"data from existing {username} feed cache")
+  
+  return{
+    "message": feed_cache['message'],
+    "feed": feed_cache['feed']
+  }
+
+
+def resolve_single_recipe(_, info, pk):
+  user = get_user(info)
+  existing_single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
+  if existing_single_recipe_cache == None:
+    try:
+      recipe = Recipe.objects.get(pk=pk)
+      cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
+      print("single recipe cache set")
+      return{
+        "message": "Recipe",
+        "recipe": recipe
+      }
+    except Recipe.DoesNotExist:
+      raise Exception("Recipe does not exist")
+  
+  single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
+  print("data from existing single recipe cache")
+  return{
+        "message": "Recipe",
+        "recipe": single_recipe_cache
+      }

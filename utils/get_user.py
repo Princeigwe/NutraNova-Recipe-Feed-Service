@@ -44,3 +44,12 @@ def get_user_rest(request):
   if user["is_on_boarded"] == False:
     raise Exception("Unauthorized request: User is not yet on-boarded.")
   return user
+
+
+def get_access_token(request):
+  authorization_header = request.headers.get("Authorization") 
+  if not authorization_header:
+    raise Exception("Authorization header not found")
+  parts = authorization_header.split(" ") 
+  access_token = parts[1]
+  return access_token

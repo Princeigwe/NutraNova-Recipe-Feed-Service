@@ -270,12 +270,23 @@ def resolve_recipe_feed(_, info):
 
 
 def resolve_single_recipe(_, info, pk):
-  # user = get_user(info)
-  try:
-    recipe = Recipe.objects.get(pk=pk)
-    return{
-      "message": "Recipe",
-      "recipe": recipe
-    }
-  except Recipe.DoesNotExist:
-    raise Exception("Recipe does not exist")
+  user = get_user(info)
+  existing_single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
+  if existing_single_recipe_cache == None:
+    try:
+      recipe = Recipe.objects.get(pk=pk)
+      cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
+      print("single recipe cache set")
+      return{
+        "message": "Recipe",
+        "recipe": recipe
+      }
+    except Recipe.DoesNotExist:
+      raise Exception("Recipe does not exist")
+  
+  single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
+  print("data from existing single recipe cache")
+  return{
+        "message": "Recipe",
+        "recipe": single_recipe_cache
+      }

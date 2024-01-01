@@ -8,6 +8,7 @@ query.set_field("recipeTags", resolvers.resolve_recipe_tags)
 query.set_field("recipeFeed", resolvers.resolve_recipe_feed)
 query.set_field("singleRecipe", resolvers.resolve_single_recipe)
 query.set_field("myDrafts", resolvers.resolve_my_drafts)
+query.set_field("draft", resolvers.resolve_draft)
 
 mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)

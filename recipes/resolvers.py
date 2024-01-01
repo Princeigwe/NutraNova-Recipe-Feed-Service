@@ -312,5 +312,18 @@ def resolve_my_drafts(_, info):
     raise Exception("Recipe not found")
 
 
-def resolve_published():
+def resolve_draft(_, info, pk):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    draft = Recipe.objects.get(pk=pk, chef=chef, status="DRAFT")
+    return draft
+  
+  except Chef.DoesNotExist:
+    raise Exception("Chef data does not exist")
+  except Recipe.DoesNotExist:
+    raise Exception("Draft with not found")
+
+
+def resolve_published_recipes(_, info):
   pass

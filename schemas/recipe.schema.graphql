@@ -156,6 +156,7 @@ type Query{
   singleRecipe(pk: Int): RecipeResponse
   myDrafts: [Recipe]
   published: [Recipe]
+  draft(pk: Int): Recipe
 }
 
 "The mutation resolvers"

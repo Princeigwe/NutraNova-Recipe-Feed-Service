@@ -154,6 +154,7 @@ type Query{
   recipeTags: [String]!
   recipeFeed: RecipeFeedResponse
   singleRecipe(pk: Int): RecipeResponse
+  myDrafts: [Recipe]
 }
 
 "The mutation resolvers"

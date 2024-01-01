@@ -290,3 +290,16 @@ def resolve_single_recipe(_, info, pk):
         "message": "Recipe",
         "recipe": single_recipe_cache
       }
+
+
+def resolve_my_drafts(_, info):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    drafts = Recipe.objects.filter(chef=chef, status='DRAFT')
+    return drafts
+
+  except Chef.DoesNotExist:
+    raise Exception("Chef data does not exist")
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe not found")

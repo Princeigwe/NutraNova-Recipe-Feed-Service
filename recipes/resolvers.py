@@ -279,12 +279,15 @@ def resolve_single_recipe(_, info, pk):
   if existing_single_recipe_cache == None:
     try:
       recipe = Recipe.objects.get(pk=pk)
-      cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
-      print("single recipe cache set")
-      return{
-        "message": "Recipe",
-        "recipe": recipe
-      }
+      if (recipe.status == "PUBLISHED"):
+        cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
+        print("single recipe cache set")
+        return{
+          "message": "Recipe",
+          "recipe": recipe
+        }
+      else:
+        return{ "message": "Forbidden request" }
     except Recipe.DoesNotExist:
       raise Exception("Recipe does not exist")
   

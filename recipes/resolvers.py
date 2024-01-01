@@ -146,7 +146,7 @@ def resolve_edit_recipe(_, info, input):
     existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
 
     existing_recipe_video_url = existing_recipe.video
-    existing_recipe_video_public_id = splitext(basename(existing_recipe_video_url))[0]
+    existing_recipe_video_public_id = splitext(basename(existing_recipe_video_url))[0] if existing_recipe_video_url != None else None
 
     if('thumbnail' in input and 'video' not in input):
       raise Exception("Video must be provided with thumbnail")
@@ -167,7 +167,7 @@ def resolve_edit_recipe(_, info, input):
     existing_recipe.save()
     tags = existing_recipe.tags.all() # fetch all tags associated to the recipe
     new_recipe_video_url = existing_recipe.video
-    new_recipe_video_public_id = splitext(basename(new_recipe_video_url))[0]
+    new_recipe_video_public_id = splitext(basename(new_recipe_video_url))[0] if new_recipe_video_url != None else None
 
     chef_details = {
       "username": existing_recipe.chef.username,
@@ -191,9 +191,7 @@ def resolve_edit_recipe(_, info, input):
       "recipe": existing_recipe_response
     }
   except Recipe.DoesNotExist as e:
-    return{
-      "error": e
-    }
+    raise Exception(e)
 
 
 # RECIPE FEED THOUGHT PROCESS:
@@ -240,23 +238,26 @@ def resolve_recipe_feed(_, info):
     else:
       for user in user_followings_cache:
         chef = Chef.objects.get(username=user['username'])
-        chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude=['created', 'published', 'chef'])
-        chef_detail = {
-          "username": chef.username,
-          "first_name": chef.first_name,
-          "last_name": chef.last_name
-        }
-        chef_latest_recipe['chef'] = chef_detail
-        chef_latest_recipe['created'] = chef.recipes.latest('published').created
-        chef_latest_recipe['published'] = chef.recipes.latest('published').published
-        feed.append(chef_latest_recipe)
+        try:
+          chef_latest_recipe = model_to_dict(chef.recipes.filter(status='PUBLISHED').latest('published'), exclude=['created', 'published', 'chef'])
+          chef_detail = {
+            "username": chef.username,
+            "first_name": chef.first_name,
+            "last_name": chef.last_name
+          }
+          chef_latest_recipe['chef'] = chef_detail
+          chef_latest_recipe['created'] = chef.recipes.latest('published').created
+          chef_latest_recipe['published'] = chef.recipes.latest('published').published
+          feed.append(chef_latest_recipe)
+        except Recipe.DoesNotExist:
+          pass
         
       cache_data = { "message": "Recipe feed", "feed": feed }
       cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
       print(f"{username} feed cache created")
 
       return{
-        "message": "Recipe feed",
+        "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
         "feed": feed
       }
   
@@ -303,3 +304,7 @@ def resolve_my_drafts(_, info):
     raise Exception("Chef data does not exist")
   except Recipe.DoesNotExist:
     raise Exception("Recipe not found")
+
+
+def resolve_published():
+  pass

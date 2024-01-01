@@ -145,6 +145,9 @@ def resolve_edit_recipe(_, info, input):
     recipe_id = input['id']
     existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
 
+    if existing_recipe.status == "PUBLISHED":
+      raise Exception("Published recipe can no longer be edited")
+
     existing_recipe_video_url = existing_recipe.video
     existing_recipe_video_public_id = splitext(basename(existing_recipe_video_url))[0] if existing_recipe_video_url != None else None
 

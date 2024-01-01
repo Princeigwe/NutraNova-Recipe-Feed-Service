@@ -145,8 +145,11 @@ def resolve_edit_recipe(_, info, input):
     recipe_id = input['id']
     existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
 
+    if existing_recipe.status == "PUBLISHED":
+      raise Exception("Published recipe can no longer be edited")
+
     existing_recipe_video_url = existing_recipe.video
-    existing_recipe_video_public_id = splitext(basename(existing_recipe_video_url))[0]
+    existing_recipe_video_public_id = splitext(basename(existing_recipe_video_url))[0] if existing_recipe_video_url != None else None
 
     if('thumbnail' in input and 'video' not in input):
       raise Exception("Video must be provided with thumbnail")
@@ -167,7 +170,7 @@ def resolve_edit_recipe(_, info, input):
     existing_recipe.save()
     tags = existing_recipe.tags.all() # fetch all tags associated to the recipe
     new_recipe_video_url = existing_recipe.video
-    new_recipe_video_public_id = splitext(basename(new_recipe_video_url))[0]
+    new_recipe_video_public_id = splitext(basename(new_recipe_video_url))[0] if new_recipe_video_url != None else None
 
     chef_details = {
       "username": existing_recipe.chef.username,
@@ -191,9 +194,7 @@ def resolve_edit_recipe(_, info, input):
       "recipe": existing_recipe_response
     }
   except Recipe.DoesNotExist as e:
-    return{
-      "error": e
-    }
+    raise Exception(e)
 
 
 # RECIPE FEED THOUGHT PROCESS:
@@ -240,23 +241,26 @@ def resolve_recipe_feed(_, info):
     else:
       for user in user_followings_cache:
         chef = Chef.objects.get(username=user['username'])
-        chef_latest_recipe = model_to_dict(chef.recipes.latest('published'), exclude=['created', 'published', 'chef'])
-        chef_detail = {
-          "username": chef.username,
-          "first_name": chef.first_name,
-          "last_name": chef.last_name
-        }
-        chef_latest_recipe['chef'] = chef_detail
-        chef_latest_recipe['created'] = chef.recipes.latest('published').created
-        chef_latest_recipe['published'] = chef.recipes.latest('published').published
-        feed.append(chef_latest_recipe)
+        try:
+          chef_latest_recipe = model_to_dict(chef.recipes.filter(status='PUBLISHED').latest('published'), exclude=['created', 'published', 'chef'])
+          chef_detail = {
+            "username": chef.username,
+            "first_name": chef.first_name,
+            "last_name": chef.last_name
+          }
+          chef_latest_recipe['chef'] = chef_detail
+          chef_latest_recipe['created'] = chef.recipes.latest('published').created
+          chef_latest_recipe['published'] = chef.recipes.latest('published').published
+          feed.append(chef_latest_recipe)
+        except Recipe.DoesNotExist:
+          pass
         
       cache_data = { "message": "Recipe feed", "feed": feed }
       cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
       print(f"{username} feed cache created")
 
       return{
-        "message": "Recipe feed",
+        "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
         "feed": feed
       }
   
@@ -275,12 +279,15 @@ def resolve_single_recipe(_, info, pk):
   if existing_single_recipe_cache == None:
     try:
       recipe = Recipe.objects.get(pk=pk)
-      cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
-      print("single recipe cache set")
-      return{
-        "message": "Recipe",
-        "recipe": recipe
-      }
+      if (recipe.status == "PUBLISHED"):
+        cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
+        print("single recipe cache set")
+        return{
+          "message": "Recipe",
+          "recipe": recipe
+        }
+      else:
+        return{ "message": "Forbidden request" }
     except Recipe.DoesNotExist:
       raise Exception("Recipe does not exist")
   
@@ -290,3 +297,39 @@ def resolve_single_recipe(_, info, pk):
         "message": "Recipe",
         "recipe": single_recipe_cache
       }
+
+
+def resolve_my_drafts(_, info):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    drafts = Recipe.objects.filter(chef=chef, status='DRAFT')
+    return drafts
+
+  except Chef.DoesNotExist:
+    raise Exception("Chef data does not exist")
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe not found")
+
+
+def resolve_draft(_, info, pk):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    draft = Recipe.objects.get(pk=pk, chef=chef, status="DRAFT")
+    return draft
+  
+  except Chef.DoesNotExist:
+    raise Exception("Chef data does not exist")
+  except Recipe.DoesNotExist:
+    raise Exception("Draft with not found")
+
+
+def resolve_my_published_recipes(_, info):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    published_recipes = chef.recipes.filter(status="PUBLISHED")
+    return published_recipes
+  except Chef.DoesNotExist:
+    raise Exception("Chef data does not exist")

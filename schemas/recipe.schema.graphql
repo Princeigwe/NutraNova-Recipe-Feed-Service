@@ -155,8 +155,9 @@ type Query{
   recipeFeed: RecipeFeedResponse
   singleRecipe(pk: Int): RecipeResponse
   myDrafts: [Recipe]
-  published: [Recipe]
+  myPublishedRecipes: [Recipe]
   draft(pk: Int): Recipe
+
 }
 
 "The mutation resolvers"

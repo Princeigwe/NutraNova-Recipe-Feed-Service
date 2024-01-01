@@ -325,5 +325,11 @@ def resolve_draft(_, info, pk):
     raise Exception("Draft with not found")
 
 
-def resolve_published_recipes(_, info):
-  pass
+def resolve_my_published_recipes(_, info):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    published_recipes = chef.recipes.filter(status="PUBLISHED")
+    return published_recipes
+  except Chef.DoesNotExist:
+    raise Exception("Chef data does not exist")

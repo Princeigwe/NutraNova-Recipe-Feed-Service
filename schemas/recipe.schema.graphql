@@ -137,10 +137,17 @@ type Recipe{
   published: String
 }
 
+
+type Like{
+  liker: Chef
+  recipe: Recipe
+}
+
 "Response for single recipe mutation and query operation"
 type RecipeResponse{
   message: String
   recipe: Recipe
+  numberOfLikes: Int
   error: String
 }
 

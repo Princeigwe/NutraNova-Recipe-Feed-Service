@@ -54,4 +54,12 @@ class Recipe(models.Model):
   def tag_names(self):
     return ', '.join([tag.name for tag in self.tags.all()])
   tag_names.short_description = "Tag Names"
-  
+
+
+
+class Like(models.Model):
+  liker = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="likes")
+
+  def __str__(self) -> str:
+    return self.user.username

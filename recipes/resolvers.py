@@ -280,7 +280,7 @@ def resolve_single_recipe(_, info, pk):
     try:
       recipe = Recipe.objects.get(pk=pk)
       if (recipe.status == "PUBLISHED"):
-        cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=120)
+        cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=60)
         print("single recipe cache set")
         return{
           "message": "Recipe",

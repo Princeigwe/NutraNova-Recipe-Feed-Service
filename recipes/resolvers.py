@@ -367,8 +367,15 @@ async def single_recipe_sub_generator(_, info, pk):
     recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
     chef = await database_sync_to_async(lambda: recipe.chef)()
     likes =  await database_sync_to_async(recipe.likes.count)()
+    chef_details = {
+      "username": chef.username,
+      "first_name": chef.first_name,
+      "last_name": chef.last_name
+    }
+    recipe_response = recipe.__dict__ # change recipe instance to dictionary
+    recipe_response['chef'] = chef_details
     response = {
-      "recipe": recipe,
+      "recipe": recipe_response,
       "likes": likes
     }
     yield response

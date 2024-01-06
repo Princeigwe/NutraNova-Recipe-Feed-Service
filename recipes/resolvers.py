@@ -339,46 +339,28 @@ def resolve_my_published_recipes(_, info):
     raise Exception("Chef data does not exist")
 
 
-# def resolve_like_recipe():
-#   pass
-
-# @database_sync_to_async
-# @sync_to_async()
-# async def single_recipe_sub_generator(_, info, pk):
-#   while True:
-#     await asyncio.sleep(2)
-#     # like_count = 0
-#     # recipe =  Recipe.objects.get(id=pk, status="PUBLISHED")
-#     recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
-#     chef = recipe.chef
-#     # print(model_to_dict(recipe)) 
-#     likes = await database_sync_to_async(recipe.likes.all)() 
-#     # likes = await database_sync_to_async(len)(likes) 
-#     response = {
-#       "recipe": recipe,
-#       # "numberOfLikes": 1
-#     }
-#     yield response
-
 @database_sync_to_async
 async def single_recipe_sub_generator(_, info, pk):
   while True:
     await asyncio.sleep(2)
-    recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
-    chef = await database_sync_to_async(lambda: recipe.chef)()
-    likes =  await database_sync_to_async(recipe.likes.count)()
-    chef_details = {
-      "username": chef.username,
-      "first_name": chef.first_name,
-      "last_name": chef.last_name
-    }
-    recipe_response = recipe.__dict__ # change recipe instance to dictionary
-    recipe_response['chef'] = chef_details
-    response = {
-      "recipe": recipe_response,
-      "likes": likes
-    }
-    yield response
+    try:
+      recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
+      chef = await database_sync_to_async(lambda: recipe.chef)()
+      likes =  await database_sync_to_async(recipe.likes.count)()
+      chef_details = {
+        "username": chef.username,
+        "first_name": chef.first_name,
+        "last_name": chef.last_name
+      }
+      recipe_response = recipe.__dict__ # change recipe instance to dictionary
+      recipe_response['chef'] = chef_details
+      response = {
+        "recipe": recipe_response,
+        "likes": likes
+      }
+      yield response
+    except Recipe.DoesNotExist as error:
+      raise Exception(error)
 
 def resolve_single_recipe_sub(response, obj, pk):
   return response

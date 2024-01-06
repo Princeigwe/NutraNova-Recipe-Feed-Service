@@ -140,6 +140,7 @@ def resolve_create_recipe(_, info, input: dict):
     return None
 
 
+@database_sync_to_async
 def resolve_edit_recipe(_, info, input):
   user = get_user(info)
   request = info.context['request']

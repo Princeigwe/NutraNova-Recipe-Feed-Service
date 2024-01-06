@@ -30,8 +30,8 @@ class Chef(models.Model):
 # of which the Recipe-Feed microservice will get the update and make the necessary changes
 # chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING) # chef new value
 class Recipe(models.Model):
-  title             = models.CharField(max_length=50)
-  description       = models.CharField(max_length=200)
+  title             = models.CharField(max_length=300)
+  description       = models.CharField(max_length=500)
   ingredients       = ArrayField( models.JSONField() )
   instructions      = ArrayField( models.CharField(max_length=250) )
   preparation_time  = models.TimeField()

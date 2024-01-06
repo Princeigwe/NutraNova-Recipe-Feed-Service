@@ -15,14 +15,25 @@ from channels.routing import URLRouter
 from .schema import schema
 from django.urls import path, re_path
 from ariadne.asgi.handlers import GraphQLTransportWSHandler
+from channels.sessions import SessionMiddlewareStack
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 # application = get_asgi_application()
 
-application = URLRouter([
-    path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-    re_path(r"", get_asgi_application())
-])
+# wrapping SessionMiddlewareStack enabled request session in ASGI server
+application = SessionMiddlewareStack( 
+    URLRouter([
+      path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+      re_path(r"", get_asgi_application())
+    ])
+  )
+
+
+# application = URLRouter([
+#       path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+#       re_path(r"", get_asgi_application())
+#     ])
 
 # app = application

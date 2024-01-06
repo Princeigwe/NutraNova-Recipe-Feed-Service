@@ -13,6 +13,7 @@ from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
 
+# todo: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
   try:
     recipe_tag = Tag.objects.get(name=name)
@@ -27,7 +28,7 @@ def resolve_recipe_tags(*_):
   tag_list = [tag.name for tag in tags]
   return tag_list
 
-
+@database_sync_to_async
 def resolve_create_recipe(_, info, input: dict):
   """
   The `resolve_create_recipe` function creates a new recipe with the given input data and returns a
@@ -132,9 +133,7 @@ def resolve_create_recipe(_, info, input: dict):
     }
   
   except ConnectionError as e:
-    return{
-      "error": e
-    }
+    raise Exception(e)
   
   # key error on deleting session with non-existing key 
   except KeyError:
@@ -362,5 +361,14 @@ async def single_recipe_sub_generator(_, info, pk):
     except Recipe.DoesNotExist as error:
       raise Exception(error)
 
+
 def resolve_single_recipe_sub(response, obj, pk):
   return response
+
+
+def resolve_like_recipe(_, info, pk):
+  user = get_user(info)
+  try:
+    pass
+  except:
+    pass

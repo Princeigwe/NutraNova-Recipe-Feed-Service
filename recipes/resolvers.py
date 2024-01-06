@@ -8,7 +8,10 @@ from threads.delete_video_thread import DeleteVideoThread
 from utils.user_service_comm import fetch_user_followings
 from utils.get_user import get_access_token
 from django.core.cache import cache
-
+import asyncio
+from channels.db import database_sync_to_async
+from asgiref.sync import sync_to_async
+import time
 
 def get_tag(name):
   try:
@@ -17,6 +20,7 @@ def get_tag(name):
   except Tag.DoesNotExist:
     raise Exception("Tag not recorded in NutraNova")
 
+@database_sync_to_async
 def resolve_recipe_tags(*_):
   """this function may be needed when the user needs to see the list af all available tags for recipe creation"""
   tags = Tag.objects.all()
@@ -333,3 +337,41 @@ def resolve_my_published_recipes(_, info):
     return published_recipes
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")
+
+
+# def resolve_like_recipe():
+#   pass
+
+# @database_sync_to_async
+# @sync_to_async()
+# async def single_recipe_sub_generator(_, info, pk):
+#   while True:
+#     await asyncio.sleep(2)
+#     # like_count = 0
+#     # recipe =  Recipe.objects.get(id=pk, status="PUBLISHED")
+#     recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
+#     chef = recipe.chef
+#     # print(model_to_dict(recipe)) 
+#     likes = await database_sync_to_async(recipe.likes.all)() 
+#     # likes = await database_sync_to_async(len)(likes) 
+#     response = {
+#       "recipe": recipe,
+#       # "numberOfLikes": 1
+#     }
+#     yield response
+
+@database_sync_to_async
+async def single_recipe_sub_generator(_, info, pk):
+  while True:
+    await asyncio.sleep(2)
+    recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
+    chef = await database_sync_to_async(lambda: recipe.chef)()
+    likes =  await database_sync_to_async(recipe.likes.count)()
+    response = {
+      "recipe": recipe,
+      "likes": likes
+    }
+    yield response
+
+def resolve_single_recipe_sub(response, obj, pk):
+  return response

@@ -1,4 +1,4 @@
-from ariadne import QueryType, load_schema_from_path, make_executable_schema, MutationType
+from ariadne import QueryType, load_schema_from_path, make_executable_schema, MutationType, SubscriptionType
 from recipes import resolvers
 
 type_defs = load_schema_from_path('schemas')
@@ -15,4 +15,8 @@ mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)
 mutation.set_field("editRecipe", resolvers.resolve_edit_recipe)
 
-schema = make_executable_schema(type_defs, query, mutation, convert_names_case=True)
+subscription = SubscriptionType()
+subscription.set_field("singleRecipeSub", resolvers.resolve_single_recipe_sub)
+subscription.set_source("singleRecipeSub", resolvers.single_recipe_sub_generator)
+
+schema = make_executable_schema(type_defs, query, mutation, subscription, convert_names_case=True)

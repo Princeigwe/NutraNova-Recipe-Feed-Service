@@ -147,7 +147,7 @@ type Like{
 type RecipeResponse{
   message: String
   recipe: Recipe
-  numberOfLikes: Int
+  likes: Int
   error: String
 }
 
@@ -171,4 +171,9 @@ type Query{
 type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse
+  likeRecipe(pk: Int): String
+}
+
+type Subscription{
+  singleRecipeSub(pk: Int): RecipeResponse
 }

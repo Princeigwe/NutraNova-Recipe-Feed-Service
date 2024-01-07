@@ -1,4 +1,4 @@
-from .models import Recipe, Tag, Chef
+from .models import Recipe, Tag, Chef, Like
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
@@ -374,9 +374,14 @@ def resolve_single_recipe_sub(response, obj, pk):
   return response
 
 
+@database_sync_to_async
 def resolve_like_recipe(_, info, pk):
   user = get_user(info)
   try:
-    pass
-  except:
-    pass
+    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
+    chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    like = Like.objects.create(recipe=recipe, liker=chef)
+    like.save()
+    return f"You liked the recipe by {recipe.chef.username}"
+  except Recipe.DoesNotExist as error:
+    raise Exception(error)

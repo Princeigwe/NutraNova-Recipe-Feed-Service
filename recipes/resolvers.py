@@ -380,8 +380,11 @@ def resolve_like_recipe(_, info, pk):
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
     chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    Like.objects.get(recipe=recipe, liker=chef)
+  except Like.DoesNotExist:
     like = Like.objects.create(recipe=recipe, liker=chef)
     like.save()
     return f"You liked the recipe by {recipe.chef.username}"
+
   except Recipe.DoesNotExist as error:
     raise Exception(error)

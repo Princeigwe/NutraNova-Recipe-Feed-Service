@@ -321,11 +321,12 @@ def resolve_my_drafts(_, info):
     raise Exception("Recipe not found")
 
 
+@database_sync_to_async
 def resolve_draft(_, info, pk):
   user = get_user(info)
   try:
     chef = Chef.objects.get(username=user['username'])
-    draft = Recipe.objects.get(pk=pk, chef=chef, status="DRAFT")
+    draft = chef.recipes.get(pk=pk, status="DRAFT")
     return draft
   
   except Chef.DoesNotExist:

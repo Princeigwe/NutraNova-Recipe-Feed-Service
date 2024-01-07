@@ -12,6 +12,7 @@ import asyncio
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
+from threads.like_recipe_thread import LikeRecipeThread
 
 # todo: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
@@ -379,12 +380,9 @@ def resolve_like_recipe(_, info, pk):
   user = get_user(info)
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-    chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
-    Like.objects.get(recipe=recipe, liker=chef)
-  except Like.DoesNotExist:
-    like = Like.objects.create(recipe=recipe, liker=chef)
-    like.save()
+    like_recipe_thread = LikeRecipeThread(user, recipe)
+    like_recipe_thread.start()
     return f"You liked the recipe by {recipe.chef.username}"
-
+  
   except Recipe.DoesNotExist as error:
     raise Exception(error)

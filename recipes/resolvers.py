@@ -335,11 +335,12 @@ def resolve_draft(_, info, pk):
     raise Exception("Draft with not found")
 
 
+@database_sync_to_async
 def resolve_my_published_recipes(_, info):
   user = get_user(info)
   try:
     chef = Chef.objects.get(username=user['username'])
-    published_recipes = chef.recipes.filter(status="PUBLISHED")
+    published_recipes = list(chef.recipes.filter(status="PUBLISHED"))
     return published_recipes
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")

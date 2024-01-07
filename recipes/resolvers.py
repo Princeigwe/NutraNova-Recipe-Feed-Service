@@ -304,13 +304,17 @@ def resolve_single_recipe(_, info, pk):
       }
 
 
+@database_sync_to_async
 def resolve_my_drafts(_, info):
   user = get_user(info)
   try:
-    chef = Chef.objects.get(username=user['username'])
-    drafts = Recipe.objects.filter(chef=chef, status='DRAFT')
-    return drafts
+    chef = Chef.objects.get(username=user['username']) 
 
+    # recipe query gave the synchronous only operation error even when using the channels database_sync_to_async decorator.
+    # wrapping it in list function, retrieved the recipes properly.
+    # reference to: https://stackoverflow.com/questions/63149616/getting-synchronousonlyoperation-error-even-after-using-sync-to-async-in-django
+    drafts = list(chef.recipes.filter(status='DRAFT')) 
+    return drafts
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")
   except Recipe.DoesNotExist:

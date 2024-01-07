@@ -51,9 +51,9 @@ class Recipe(models.Model):
   def __str__(self) -> str:
     return self.title
   
-  def tag_names(self):
-    return ', '.join([tag.name for tag in self.tags.all()])
-  tag_names.short_description = "Tag Names"
+  # def tag_names(self):
+  #   return ', '.join([tag.name for tag in self.tags.all()])
+  # tag_names.short_description = "Tag Names"
 
 
 

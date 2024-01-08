@@ -405,3 +405,15 @@ def resolve_unlike_recipe(_, info, pk):
     pass
   except Like.DoesNotExist:
     pass
+
+
+@database_sync_to_async
+def resolve_delete_recipe(_, info, pk):
+  user = get_user(info)
+  try:
+    chef = Chef.objects.get(username=user['username'])
+    recipe = Recipe.objects.get(id=pk, chef=chef)
+    recipe.delete()
+    return f"You deleted your recipe: {recipe.title}"
+  except Recipe.DoesNotExist as error:
+    raise Exception(error)

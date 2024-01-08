@@ -173,6 +173,7 @@ type Mutation{
   editRecipe(input: EditRecipeInput): RecipeResponse
   likeRecipe(pk: Int): String
   unLikeRecipe(pk: Int): String
+  deleteRecipe(pk: Int): String
 }
 
 type Subscription{

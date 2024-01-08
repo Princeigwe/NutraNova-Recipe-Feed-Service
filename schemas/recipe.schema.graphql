@@ -137,10 +137,17 @@ type Recipe{
   published: String
 }
 
+
+type Like{
+  liker: Chef
+  recipe: Recipe
+}
+
 "Response for single recipe mutation and query operation"
 type RecipeResponse{
   message: String
   recipe: Recipe
+  likes: Int
   error: String
 }
 
@@ -153,7 +160,7 @@ type RecipeFeedResponse{
 type Query{
   recipeTags: [String]!
   recipeFeed: RecipeFeedResponse
-  singleRecipe(pk: Int): RecipeResponse
+  # singleRecipe(pk: Int): RecipeResponse
   myDrafts: [Recipe]
   myPublishedRecipes: [Recipe]
   draft(pk: Int): Recipe
@@ -164,4 +171,10 @@ type Query{
 type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse
+  likeRecipe(pk: Int): String
+  unLikeRecipe(pk: Int): String
+}
+
+type Subscription{
+  singleRecipe(pk: Int): RecipeResponse
 }

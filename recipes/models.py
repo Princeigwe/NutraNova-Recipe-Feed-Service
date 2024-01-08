@@ -30,8 +30,8 @@ class Chef(models.Model):
 # of which the Recipe-Feed microservice will get the update and make the necessary changes
 # chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING) # chef new value
 class Recipe(models.Model):
-  title             = models.CharField(max_length=50)
-  description       = models.CharField(max_length=200)
+  title             = models.CharField(max_length=300)
+  description       = models.CharField(max_length=500)
   ingredients       = ArrayField( models.JSONField() )
   instructions      = ArrayField( models.CharField(max_length=250) )
   preparation_time  = models.TimeField()
@@ -51,7 +51,15 @@ class Recipe(models.Model):
   def __str__(self) -> str:
     return self.title
   
-  def tag_names(self):
-    return ', '.join([tag.name for tag in self.tags.all()])
-  tag_names.short_description = "Tag Names"
-  
+  # def tag_names(self):
+  #   return ', '.join([tag.name for tag in self.tags.all()])
+  # tag_names.short_description = "Tag Names"
+
+
+
+class Like(models.Model):
+  liker = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="likes")
+
+  def __str__(self) -> str:
+    return self.user.username

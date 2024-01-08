@@ -172,6 +172,7 @@ type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse
   likeRecipe(pk: Int): String
+  unLikeRecipe(pk: Int): String
 }
 
 type Subscription{

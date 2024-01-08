@@ -15,6 +15,7 @@ mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)
 mutation.set_field("editRecipe", resolvers.resolve_edit_recipe)
 mutation.set_field("likeRecipe", resolvers.resolve_like_recipe)
+mutation.set_field("unLikeRecipe", resolvers.resolve_unlike_recipe)
 
 subscription = SubscriptionType()
 subscription.set_field("singleRecipe", resolvers.resolve_single_recipe_sub)

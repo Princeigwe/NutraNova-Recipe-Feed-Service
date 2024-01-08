@@ -279,6 +279,7 @@ def resolve_recipe_feed(_, info):
   }
 
 
+# this resolver is currently not active in any operation, but i still don't want to delete it :|
 def resolve_single_recipe(_, info, pk):
   user = get_user(info)
   existing_single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
@@ -386,3 +387,21 @@ def resolve_like_recipe(_, info, pk):
   
   except Recipe.DoesNotExist as error:
     raise Exception(error)
+
+
+@database_sync_to_async
+def resolve_unlike_recipe(_, info, pk):
+  user = get_user(info)
+  try:
+    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
+    chef = Chef.objects.get(username=user['username'])
+    like = Like.objects.get(recipe=recipe, liker=chef)
+    like.delete()
+    return f"You un-liked recipe by {recipe.chef.username}"
+  
+  except Recipe.DoesNotExist as error:
+    raise Exception(error)
+  except Chef.DoesNotExist:
+    pass
+  except Like.DoesNotExist:
+    pass

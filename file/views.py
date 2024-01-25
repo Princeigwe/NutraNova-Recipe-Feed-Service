@@ -11,7 +11,6 @@ from utils.upload_image import upload_and_get_image_details
 from django.views.decorators.csrf import csrf_exempt
 from threads.upload_video_thread import UploadVideoThread
 from utils.get_user import get_user_rest
-from django.http import HttpResponseBadRequest, HttpResponse
 from rest_framework import status
 import os
 
@@ -51,7 +50,8 @@ def upload_recipe_image_to_cloudinary(request):
         recipe_images.append(uploaded_image_url)
       
       else:
-        # return HttpResponse({ "message": "Invalid file Format"}, status=400)
+        # delete invalid file from media directory 
+        os.remove(image_path)
         return Response(
           {"message": "invalid file format"},
           status=status.HTTP_400_BAD_REQUEST

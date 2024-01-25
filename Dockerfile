@@ -14,8 +14,8 @@ COPY . /code/
 # create media directory in the working directory. make sure "media" folder does not exist already
 RUN mkdir /code/media/
 
+EXPOSE 2000
+
 # starting django server on container startup
 CMD ["python3", "manage.py", "runserver", "0.0.0.0:2000"]
 # CMD ["python3", "manage.py", "runserver"]
-
-

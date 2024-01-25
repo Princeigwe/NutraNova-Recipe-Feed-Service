@@ -11,6 +11,7 @@ from utils.upload_image import upload_and_get_image_details
 from django.views.decorators.csrf import csrf_exempt
 from threads.upload_video_thread import UploadVideoThread
 from utils.get_user import get_user_rest
+from rest_framework import status
 import os
 
 
@@ -26,7 +27,8 @@ def upload_recipe_image_to_cloudinary(request):
     # request.data.getlist(<key_name>) retrieve a list of values for a given key from the request data
     for image in request.data.getlist('images'):
       if any(char.isspace() for char in image.name):
-        raise ParseError("Image names cannot be parsed, rename them without space characters.")
+        image.name = image.name.replace(' ', '_')
+        print(image.name)
       
       default_storage = settings.MEDIA_ROOT
       fs = FileSystemStorage(location=default_storage)
@@ -35,14 +37,36 @@ def upload_recipe_image_to_cloudinary(request):
 
       image_path = f"{settings.BASE_DIR}{file_url}"
 
-      #compress image and upload the compressed image
-      compressed_image = compress_image(image_path)
-      upload = upload_and_get_image_details(compressed_image)
-      uploaded_image_url = upload['secure_url']
-      recipe_images.append(uploaded_image_url)
+      if image_path.endswith(".png"):
+        upload = upload_and_get_image_details(image_path)
+        uploaded_image_url = upload['secure_url']
+        recipe_images.append(uploaded_image_url)
+      
+      elif image_path.endswith(".jpg"):
+        #compress image and upload the compressed image
+        compressed_image = compress_image(image_path)
+        upload = upload_and_get_image_details(compressed_image)
+        uploaded_image_url = upload['secure_url']
+        recipe_images.append(uploaded_image_url)
+      
+      else:
+        # delete invalid file from media directory 
+        os.remove(image_path)
+        return Response(
+          {"message": "invalid file format"},
+          status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+      # #compress image and upload the compressed image
+      # compressed_image = compress_image(image_path)
+      # upload = upload_and_get_image_details(compressed_image)
+      # uploaded_image_url = upload['secure_url']
+      # recipe_images.append(uploaded_image_url)
 
       # delete image from media directory after upload
       os.remove(image_path)
+      print("recipe images:", recipe_images)
 
     return Response(
       {

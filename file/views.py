@@ -28,8 +28,7 @@ def upload_recipe_image_to_cloudinary(request):
     # request.data.getlist(<key_name>) retrieve a list of values for a given key from the request data
     for image in request.data.getlist('images'):
       if any(char.isspace() for char in image.name):
-        # raise ParseError("Image names cannot be parsed, rename them without space characters.")
-        image.name.replace(' ', '_')
+        image.name = image.name.replace(' ', '_')
         print(image.name)
       
       default_storage = settings.MEDIA_ROOT

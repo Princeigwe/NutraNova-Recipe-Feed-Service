@@ -70,8 +70,58 @@ def recipe_response():
           "chef": {
             "username": "bestcook",
             "first_name": "Prince",
-            "last_name": "Favour"
+            "last_name": "Igwe"
           }
+        }
+      }
+    }
+  }
+  return response
+
+
+@pytest.fixture()
+def fetch_single_recipe_response():
+  response = {
+    "data": {
+      "singleRecipe": {
+        "message": "Recipe",
+        "recipe": {
+          "id": 87,
+          "title": "Cheese Cake Heaven",
+          "description": "A very good appetizing cheese cake",
+          "status": "PUBLISHED",
+          "chef": {
+            "username": "bestcookm",
+            "first_name": "Prince",
+            "last_name": "Igwe"
+          },
+          "cookingTime": "00:00:00",
+          "preparationTime": "00:05:00"
+        }
+      }
+    }
+  }
+  return response
+
+
+@pytest.fixture()
+def fetch_draft_response():
+  response = {
+    "data": {
+      "singleRecipe": {
+        "message": "Recipe",
+        "recipe": {
+          "id": 87,
+          "title": "Cheese Cake Heaven",
+          "description": "A very good appetizing cheese cake",
+          "status": "DRAFT",
+          "chef": {
+            "username": "bestcookm",
+            "first_name": "Prince",
+            "last_name": "Igwe"
+          },
+          "cookingTime": "00:00:00",
+          "preparationTime": "00:05:00"
         }
       }
     }

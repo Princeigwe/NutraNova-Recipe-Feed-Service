@@ -16,7 +16,7 @@ class Tag(models.Model):
 
 
 class Chef(models.Model):
-  username = models.CharField(max_length=100)
+  username = models.CharField(max_length=100, db_index=True)
   first_name    = models.CharField(max_length=20, default='')
   last_name     = models.CharField(max_length=20, default='')
 
@@ -30,8 +30,8 @@ class Chef(models.Model):
 # of which the Recipe-Feed microservice will get the update and make the necessary changes
 # chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING) # chef new value
 class Recipe(models.Model):
-  title             = models.CharField(max_length=50)
-  description       = models.CharField(max_length=200)
+  title             = models.CharField(max_length=300)
+  description       = models.CharField(max_length=500)
   ingredients       = ArrayField( models.JSONField() )
   instructions      = ArrayField( models.CharField(max_length=250) )
   preparation_time  = models.TimeField()
@@ -42,7 +42,7 @@ class Recipe(models.Model):
   thumbnail         = models.URLField(max_length=500, default="", blank=True, null= True)
   tags              = models.ManyToManyField(Tag)
   nutritional_value = models.JSONField(default=dict)
-  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='recipes')
   status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT")
   created           = models.DateTimeField(auto_now_add=True)
   published         = models.DateTimeField(auto_now=True)
@@ -51,7 +51,15 @@ class Recipe(models.Model):
   def __str__(self) -> str:
     return self.title
   
-  def tag_names(self):
-    return ', '.join([tag.name for tag in self.tags.all()])
-  tag_names.short_description = "Tag Names"
-  
+  # def tag_names(self):
+  #   return ', '.join([tag.name for tag in self.tags.all()])
+  # tag_names.short_description = "Tag Names"
+
+
+
+class Like(models.Model):
+  liker = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="likes")
+
+  def __str__(self) -> str:
+    return self.user.username

@@ -17,7 +17,8 @@ def jwt_authorization(func):
       return func(request) # wrapped function with its parameter
 
     # if there is an exception from the decode_access_token is raised, return jwt expired error message
-    except Exception:
+    except Exception as error:
+      print(error)
       return Response(
         {"message": "invalid jwt"},
         status=status.HTTP_401_UNAUTHORIZED

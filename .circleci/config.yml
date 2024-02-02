@@ -73,13 +73,13 @@ workflows:
   build-test-deploy:
     jobs:
       - install-python-dependencies-and-test-application
-      # - build-and-deploy-docker-image:
-      #     context:
-      #       - DOCKER_AUTH
-      #     requires:
-      #       - install-python-dependencies-and-test-application
+      - build-and-deploy-docker-image:
+          context:
+            - DOCKER_AUTH
+          requires:
+            - install-python-dependencies-and-test-application
       - update-subgraph-schema:
           context: NutraNova
-          # requires:
-          #   - build-and-deploy-docker-image
+          requires:
+            - build-and-deploy-docker-image
           

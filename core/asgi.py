@@ -11,7 +11,7 @@ import os
 
 from django.core.asgi import get_asgi_application
 from ariadne.asgi import GraphQL
-from channels.routing import URLRouter
+from channels.routing import URLRouter, ProtocolTypeRouter
 from .schema import schema
 from django.urls import path, re_path
 from ariadne.asgi.handlers import GraphQLTransportWSHandler
@@ -23,12 +23,26 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 # application = get_asgi_application()
 
 # wrapping SessionMiddlewareStack enabled request session in ASGI server
-application = SessionMiddlewareStack( 
-    URLRouter([
-      path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-      re_path(r"", get_asgi_application())
-    ])
-  )
+# application = SessionMiddlewareStack( 
+#     URLRouter([
+#       path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+#       re_path(r"", get_asgi_application())
+#     ])
+#   )
+
+
+# fix for:  ValueError: Django can only handle ASGI/HTTP connections, not websocket.
+application = ProtocolTypeRouter( {
+  # wrapping SessionMiddlewareStack enabled request session in ASGI server
+  "http": SessionMiddlewareStack( get_asgi_application() ),
+
+  "websocket": SessionMiddlewareStack( 
+      URLRouter([
+        path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+        # re_path(r"", get_asgi_application())
+      ])
+    )
+} )
 
 
 # application = URLRouter([

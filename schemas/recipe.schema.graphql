@@ -176,6 +176,7 @@ type Mutation{
   deleteRecipe(pk: Int): String
 }
 
+"This operation works for a single recipe, in order to know the number of likes it has in real time"
 type Subscription{
   singleRecipe(pk: Int): RecipeResponse
 }

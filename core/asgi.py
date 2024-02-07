@@ -33,14 +33,27 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 
 # fix for:  ValueError: Django can only handle ASGI/HTTP connections, not websocket.
+# application = ProtocolTypeRouter( {
+#   # wrapping SessionMiddlewareStack enabled request session in ASGI server
+#   "http": SessionMiddlewareStack( get_asgi_application() ),
+
+#   "websocket": SessionMiddlewareStack( 
+#       URLRouter([
+#         path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+#         # re_path(r"", get_asgi_application())
+#       ])
+#     )
+# } )
+
+
 application = ProtocolTypeRouter( {
   # wrapping SessionMiddlewareStack enabled request session in ASGI server
-  "http": SessionMiddlewareStack( get_asgi_application() ),
+  # "http": SessionMiddlewareStack( get_asgi_application() ),
 
   "websocket": SessionMiddlewareStack( 
       URLRouter([
         path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-        # re_path(r"", get_asgi_application())
+        re_path(r"", get_asgi_application())
       ])
     )
 } )

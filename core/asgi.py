@@ -18,6 +18,7 @@ from ariadne.asgi.handlers import GraphQLTransportWSHandler
 from channels.sessions import SessionMiddlewareStack
 
 
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 # application = get_asgi_application()
@@ -45,19 +46,18 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 # } )
 
 
-application = ProtocolTypeRouter( {
-  # wrapping SessionMiddlewareStack enabled request session in ASGI server
-  "http": SessionMiddlewareStack( get_asgi_application() ),
-
-  "websocket": SessionMiddlewareStack( 
-      URLRouter([
-        path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-        re_path(r"", get_asgi_application())
-      ])
-    )
-} )
-
-
+application = ProtocolTypeRouter({
+    "http": SessionMiddlewareStack(
+        URLRouter([
+            path("graphql/", GraphQL(schema=schema)),
+            re_path(r"", get_asgi_application())
+        ])
+    ),
+    "websocket":
+        URLRouter([
+            path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+        ]),
+})
 
 
 # application = URLRouter([

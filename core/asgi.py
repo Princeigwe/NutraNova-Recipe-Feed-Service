@@ -16,6 +16,9 @@ from .schema import schema
 from django.urls import path, re_path
 from ariadne.asgi.handlers import GraphQLTransportWSHandler
 from channels.sessions import SessionMiddlewareStack
+from channels.auth import AuthMiddlewareStack
+from channels.security.websocket import AllowedHostsOriginValidator
+from .routing import websocket_urlpatterns
 
 
 
@@ -53,10 +56,12 @@ application = ProtocolTypeRouter({
             re_path(r"", get_asgi_application())
         ])
     ),
-    "websocket":
-        URLRouter([
-            path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-        ]),
+    "websocket": AllowedHostsOriginValidator(
+      AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+    )
+        # URLRouter([
+        #     path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+        # ]),
 })
 
 

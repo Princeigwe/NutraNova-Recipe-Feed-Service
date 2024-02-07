@@ -16,6 +16,7 @@ from .schema import schema
 from django.urls import path, re_path
 from ariadne.asgi.handlers import GraphQLTransportWSHandler
 from channels.sessions import SessionMiddlewareStack
+from channels.routing import get_default_application
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
@@ -23,12 +24,12 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 # application = get_asgi_application()
 
 # wrapping SessionMiddlewareStack enabled request session in ASGI server
-application = SessionMiddlewareStack( 
-    URLRouter([
-      path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-      re_path(r"", get_asgi_application())
-    ])
-  )
+# application = SessionMiddlewareStack( 
+#     URLRouter([
+#       path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+#       re_path(r"", get_asgi_application())
+#     ])
+#   )
 
 
 # fix for:  ValueError: Django can only handle ASGI/HTTP connections, not websocket.
@@ -43,6 +44,14 @@ application = SessionMiddlewareStack(
 #       ])
 #     )
 # } )
+
+
+application = SessionMiddlewareStack( 
+    URLRouter([
+      path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+      re_path(r"", get_default_application())
+    ])
+  )
 
 
 

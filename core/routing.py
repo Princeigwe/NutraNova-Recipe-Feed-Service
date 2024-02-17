@@ -7,7 +7,6 @@ from django.core.asgi import get_asgi_application
 
 
 websocket_urlpatterns = [
-  # path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
-  path("graphql/ws", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+  path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
   re_path(r"", get_asgi_application()),
 ]

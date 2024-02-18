@@ -104,6 +104,18 @@ WSGI_APPLICATION = 'core.wsgi.application'
 ASGI_APPLICATION = "core.asgi.application"
 
 
+# configuration for websocket scalability with redis
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "asgi_redis.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.environ.get('REDIS_SERVER_NAME'), 25289)],
+        },
+        "ROUTING": "core.routing.websocket_urlpatterns",
+    },
+}
+
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

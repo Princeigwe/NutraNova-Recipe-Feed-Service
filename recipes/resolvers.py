@@ -13,6 +13,7 @@ from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
 from threads.like_recipe_thread import LikeRecipeThread
+from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 
 # todo: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
@@ -193,6 +194,25 @@ def resolve_edit_recipe(_, info, input):
     if existing_recipe_video_public_id != new_recipe_video_public_id:
       delete_video_thread = DeleteVideoThread(existing_recipe_video_public_id)
       delete_video_thread.start()
+    
+    # send message to kafka if recipe status is 'PUBLISHED'
+    if existing_recipe_response['status'] == 'PUBLISHED':
+      kafka_message = {
+      "chef_username": chef_details['username'],
+      "chef_first_name": chef_details['first_name'],
+      "chef_last_name": chef_details['last_name'],
+      "recipe_title": existing_recipe_response['title'],
+      "recipe_description": existing_recipe_response['description'],
+      "recipe_ingredients": existing_recipe_response['ingredients'],
+      "recipe_instructions": existing_recipe_response['instructions'],
+      "recipe_preparation_time": str(existing_recipe_response['preparation_time']),
+      "recipe_cooking_time": str(existing_recipe_response['cooking_time']),
+      "recipe_servings": existing_recipe_response['servings'],
+      "recipe_nutritional_value": existing_recipe_response['nutritional_value'],
+      "tags": existing_recipe_response['tags']
+    }
+
+    send_graph_nodes_details(kafka_message)
 
     return {
       "message": "Recipe created and saved as draft",

@@ -209,13 +209,14 @@ def resolve_edit_recipe(_, info, input):
       "recipe_cooking_time": str(existing_recipe_response['cooking_time']),
       "recipe_servings": existing_recipe_response['servings'],
       "recipe_nutritional_value": existing_recipe_response['nutritional_value'],
+      "recipe_published": str(existing_recipe_response['published']),
       "tags": existing_recipe_response['tags']
     }
 
     send_graph_nodes_details(kafka_message)
 
     return {
-      "message": "Recipe created and saved as draft",
+      "message": "Recipe published",
       "recipe": existing_recipe_response
     }
   except Recipe.DoesNotExist as e:

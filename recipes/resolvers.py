@@ -14,6 +14,7 @@ from asgiref.sync import sync_to_async
 import time
 from threads.like_recipe_thread import LikeRecipeThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
+from utils.kafka.produce.create_neo_graph_chef_like_recipe_rel import send_chef_like_recipe_details
 
 # todo: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
@@ -402,8 +403,19 @@ def resolve_like_recipe(_, info, pk):
   user = get_user(info)
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
+
+    # like recipe in background thread
     like_recipe_thread = LikeRecipeThread(user, recipe)
     like_recipe_thread.start()
+
+    # send message to kafka
+    kafka_message = {
+      "chef_username": recipe.chef.username,
+      "recipe_title": recipe.title,
+      "recipe_published": str(recipe.published),
+    }
+
+    send_chef_like_recipe_details(kafka_message)
     return f"You liked the recipe by {recipe.chef.username}"
   
   except Recipe.DoesNotExist as error:

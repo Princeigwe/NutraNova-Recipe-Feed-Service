@@ -14,6 +14,7 @@ from asgiref.sync import sync_to_async
 import time
 from threads.like_recipe_thread import LikeRecipeThread
 from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThread
+from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.kafka.produce.create_neo_graph_chef_like_recipe_rel import send_chef_like_recipe_details
 from utils.kafka.produce.delete_neo_graph_chef_like_recipe_rel import send_delete_chef_like_recipe_details
@@ -442,7 +443,9 @@ def resolve_unlike_recipe(_, info, pk):
       "recipe_published": str(recipe.published),
     }
 
-    send_delete_chef_like_recipe_details(kafka_message)
+    # sending kafka message in background thread
+    graph_chef_un_like_recipe_thread = GraphChefUnLikeRecipeThread(kafka_message)
+    graph_chef_un_like_recipe_thread.start()
     return f"You un-liked recipe by {recipe.chef.username}"
   
   except Recipe.DoesNotExist as error:

@@ -413,7 +413,9 @@ def resolve_like_recipe(_, info, pk):
 
     # send message to kafka
     kafka_message = {
-      "chef_username": recipe.chef.username,
+      "liker_username": user['username'],
+      "liker_first_name": user['first_name'],
+      "liker_last_name": user['last_name'],
       "recipe_title": recipe.title,
       "recipe_published": str(recipe.published),
     }
@@ -438,7 +440,9 @@ def resolve_unlike_recipe(_, info, pk):
 
     # send message to kafka
     kafka_message = {
-      "chef_username": recipe.chef.username,
+      "liker_username": user['username'],
+      "liker_first_name": user['first_name'],
+      "liker_last_name": user['last_name'],
       "recipe_title": recipe.title,
       "recipe_published": str(recipe.published),
     }
@@ -453,7 +457,7 @@ def resolve_unlike_recipe(_, info, pk):
   except Chef.DoesNotExist:
     pass
   except Like.DoesNotExist:
-    pass
+    return f"You un-liked recipe by {recipe.chef.username}"
 
 
 @database_sync_to_async

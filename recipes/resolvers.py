@@ -13,7 +13,11 @@ from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
 from threads.like_recipe_thread import LikeRecipeThread
+from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThread
+from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
+from utils.kafka.produce.create_neo_graph_chef_like_recipe_rel import send_chef_like_recipe_details
+from utils.kafka.produce.delete_neo_graph_chef_like_recipe_rel import send_delete_chef_like_recipe_details
 
 # todo: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
@@ -209,13 +213,14 @@ def resolve_edit_recipe(_, info, input):
       "recipe_cooking_time": str(existing_recipe_response['cooking_time']),
       "recipe_servings": existing_recipe_response['servings'],
       "recipe_nutritional_value": existing_recipe_response['nutritional_value'],
+      "recipe_published": str(existing_recipe_response['published']),
       "tags": existing_recipe_response['tags']
     }
 
     send_graph_nodes_details(kafka_message)
 
     return {
-      "message": "Recipe created and saved as draft",
+      "message": "Recipe published",
       "recipe": existing_recipe_response
     }
   except Recipe.DoesNotExist as e:
@@ -401,8 +406,23 @@ def resolve_like_recipe(_, info, pk):
   user = get_user(info)
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
+
+    # like recipe in background thread
     like_recipe_thread = LikeRecipeThread(user, recipe)
     like_recipe_thread.start()
+
+    # send message to kafka
+    kafka_message = {
+      "liker_username": user['username'],
+      "liker_first_name": user['first_name'],
+      "liker_last_name": user['last_name'],
+      "recipe_title": recipe.title,
+      "recipe_published": str(recipe.published),
+    }
+
+    # sending kafka message in background thread
+    graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
+    graph_chef_like_recipe_thread.start()
     return f"You liked the recipe by {recipe.chef.username}"
   
   except Recipe.DoesNotExist as error:
@@ -417,6 +437,19 @@ def resolve_unlike_recipe(_, info, pk):
     chef = Chef.objects.get(username=user['username'])
     like = Like.objects.get(recipe=recipe, liker=chef)
     like.delete()
+
+    # send message to kafka
+    kafka_message = {
+      "liker_username": user['username'],
+      "liker_first_name": user['first_name'],
+      "liker_last_name": user['last_name'],
+      "recipe_title": recipe.title,
+      "recipe_published": str(recipe.published),
+    }
+
+    # sending kafka message in background thread
+    graph_chef_un_like_recipe_thread = GraphChefUnLikeRecipeThread(kafka_message)
+    graph_chef_un_like_recipe_thread.start()
     return f"You un-liked recipe by {recipe.chef.username}"
   
   except Recipe.DoesNotExist as error:
@@ -424,7 +457,7 @@ def resolve_unlike_recipe(_, info, pk):
   except Chef.DoesNotExist:
     pass
   except Like.DoesNotExist:
-    pass
+    return f"You un-liked recipe by {recipe.chef.username}"
 
 
 @database_sync_to_async

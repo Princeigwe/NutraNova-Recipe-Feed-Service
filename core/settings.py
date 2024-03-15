@@ -111,7 +111,7 @@ CHANNEL_LAYERS = {
         "CONFIG": {
             "hosts": [(os.environ.get('REDIS_SERVER_NAME'), 25289)],
         },
-        "ROUTING": "core.routing.websocket_urlpatterns",
+        # "ROUTING": "core.routing.websocket_urlpatterns",
     },
 }
 

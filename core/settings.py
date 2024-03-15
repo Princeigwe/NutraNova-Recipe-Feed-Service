@@ -107,7 +107,9 @@ ASGI_APPLICATION = "core.asgi.application"
 # configuration for websocket scalability with redis
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "asgi_redis.RedisChannelLayer",
+        # "BACKEND": "asgi_redis.RedisChannelLayer",
+        "BACKEND": "channel_redis.core.RedisChannelLayer",
+
         "CONFIG": {
             "hosts": [(os.environ.get('REDIS_SERVER_NAME'), 25289)],
         },

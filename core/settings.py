@@ -112,7 +112,6 @@ ASGI_APPLICATION = "core.asgi.application"
 
 #         "CONFIG": {
 #             # "hosts": [(os.environ.get('REDIS_SERVER_NAME'), 25289)],
-#             "hosts": [("rediss://default:AVNS_13ADJ8_ZEdd-z9tg_oA@nutranova-recipe-redis-nutranovahealth.a.aivencloud.com:25289")],
 #         },
 #         # "ROUTING": "core.routing.websocket_urlpatterns",
 #     },
@@ -123,7 +122,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
 
         "CONFIG": {
-            "hosts": [("rediss://default:AVNS_13ADJ8_ZEdd-z9tg_oA@nutranova-recipe-redis-nutranovahealth.a.aivencloud.com:25289")],
+            "hosts": [(os.environ.get('REDIS_URL'))],
         },
     },
 }

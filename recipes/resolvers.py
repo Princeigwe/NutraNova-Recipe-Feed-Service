@@ -16,8 +16,9 @@ from threads.like_recipe_thread import LikeRecipeThread
 from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThread
 from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
-from utils.kafka.produce.create_neo_graph_chef_like_recipe_rel import send_chef_like_recipe_details
-from utils.kafka.produce.delete_neo_graph_chef_like_recipe_rel import send_delete_chef_like_recipe_details
+
+#* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
+#* my brain is occupied at the moment to write an alternative
 
 # todo: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
@@ -188,6 +189,16 @@ def resolve_edit_recipe(_, info, input):
 			"last_name": existing_recipe.chef.last_name
     }
 
+    chef_preferences = {
+      "dietary_preference": user["dietary_preference"],
+      "health_goal":        user["health_goal"],
+      "allergens":          user["allergens"],
+      "activity_level":     user["activity_level"],
+      "cuisines":           user["cuisines"],
+      "medical_conditions": user["medical_conditions"],
+      "taste_preferences":  user["taste_preferences"]
+    }
+
     existing_recipe_response = model_to_dict(existing_recipe, exclude=['tags', 'created', 'published', 'chef']) 
     existing_recipe_response_tags = [tag.name for tag in tags]
     existing_recipe_response['tags'] = existing_recipe_response_tags
@@ -205,6 +216,7 @@ def resolve_edit_recipe(_, info, input):
       "chef_username": chef_details['username'],
       "chef_first_name": chef_details['first_name'],
       "chef_last_name": chef_details['last_name'],
+      "chef_preferences": chef_preferences,
       "recipe_title": existing_recipe_response['title'],
       "recipe_description": existing_recipe_response['description'],
       "recipe_ingredients": existing_recipe_response['ingredients'],

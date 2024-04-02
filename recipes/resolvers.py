@@ -112,6 +112,10 @@ def resolve_create_recipe(_, info, input: dict):
       chef=chef
     )
 
+    # limiting the number of recipe tags to 5
+    if len(input['tags']) > 5:
+      raise Exception("Recipe tags is limited to a number of 5")
+
     for tag_name in input['tags']:
       tag = get_tag(tag_name)
       recipe.tags.add(tag)

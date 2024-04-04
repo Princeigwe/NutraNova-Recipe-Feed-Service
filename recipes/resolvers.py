@@ -15,6 +15,7 @@ import time
 from threads.like_recipe_thread import LikeRecipeThread
 from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThread
 from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
+from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
@@ -420,12 +421,32 @@ def resolve_single_recipe_sub(response, obj, pk):
 @database_sync_to_async
 def resolve_like_recipe(_, info, pk):
   user = get_user(info)
+  request = info.context['request']
+
+  # like_click_count to set interval for processing recommendations by the recommendations service
+  like_click_count = request.session.get(f"{user['username']}_like_click_count")
+  if not like_click_count:
+    request.session[f"{user['username']}_like_click_count"] = 0
+
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
 
     # like recipe in background thread
     like_recipe_thread = LikeRecipeThread(user, recipe)
     like_recipe_thread.start()
+
+    like_click_count = request.session.get(f"{user['username']}_like_click_count")
+    like_click_count += 1
+    request.session[f"{user['username']}_like_click_count"] = like_click_count 
+
+    if like_click_count == 5:
+      #* send kafka message to recommendation service to process recommended feed data
+      kafka_recommendation_message = user['username']
+      request_recommended_feed_thread = RequestRecommendedFeedThread(kafka_recommendation_message)
+      request_recommended_feed_thread.start()
+
+      # set session like click count to zero
+      request.session[f"{user['username']}_like_click_count"] = 0
 
     # send message to kafka
     kafka_message = {
@@ -436,7 +457,7 @@ def resolve_like_recipe(_, info, pk):
       "recipe_published": str(recipe.published),
     }
 
-    # sending kafka message in background thread
+    # sending kafka message in background thread to create chef-to-recipe :LIKE relationship in recommendations microservice
     graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
     graph_chef_like_recipe_thread.start()
     return f"You liked the recipe by {recipe.chef.username}"

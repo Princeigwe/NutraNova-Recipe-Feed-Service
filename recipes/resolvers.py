@@ -303,6 +303,26 @@ def resolve_recipe_feed(_, info):
         except Recipe.DoesNotExist:
           pass
         
+      ## todo: add the logic for including recommended feed here
+      # adding recommendations from recommendation microservice to feed
+      recommendations = cache.get(f"{username}_recommendation_feed")
+      print("recommendations feed: ", recommendations)
+      if not recommendations:
+        pass
+      else:
+        print("Recommendations cache exist")
+        for item in recommendations:
+          recipe = Recipe.objects.get(title=item['recipe_title'], published=item['recipe_published_date'])
+          chef = recipe.chef
+          chef_details = {
+            "username": chef.username,
+            "first_name": chef.first_name,
+            "last_name": chef.last_name
+          }
+          recipe_response = recipe.__dict__ # change recipe instance to dictionary
+          recipe_response['chef'] = chef_details
+          feed.append(recipe_response)
+
       cache_data = { "message": "Recipe feed", "feed": feed }
       cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
       print(f"{username} feed cache created")
@@ -448,11 +468,21 @@ def resolve_like_recipe(_, info, pk):
       # set session like click count to zero
       request.session[f"{user['username']}_like_click_count"] = 0
 
+    liker_preferences = {
+      "dietary_preference": user["dietary_preference"],
+      "health_goal":        user["health_goal"],
+      "allergens":          user["allergens"],
+      "activity_level":     user["activity_level"],
+      "cuisines":           user["cuisines"],
+      "medical_conditions": user["medical_conditions"],
+      "taste_preferences":  user["taste_preferences"]
+    }
     # send message to kafka
     kafka_message = {
       "liker_username": user['username'],
       "liker_first_name": user['first_name'],
       "liker_last_name": user['last_name'],
+      "liker_preferences": liker_preferences,
       "recipe_title": recipe.title,
       "recipe_published": str(recipe.published),
     }

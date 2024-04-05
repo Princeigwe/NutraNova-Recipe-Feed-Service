@@ -78,7 +78,6 @@ def consume_user_recommended_feed(messages):
 
 
 
-## todo: uncomment the whole section of this function definition code if update doesn't work
 # def consume_and_update_chef_username():
 #   print("Kafka consumer to be initialized")
 

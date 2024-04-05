@@ -255,10 +255,18 @@ def resolve_edit_recipe(_, info, input):
 @database_sync_to_async
 def resolve_recipe_feed(_, info):
   """
-  The `resolve_recipe_feed` function retrieves a user's recipe feed from the cache, and if it doesn't
-  exist, it fetches the user's followings, retrieves the latest recipe from each following chef, and
-  populates the feed with the recipes.
+  The function `resolve_recipe_feed` retrieves and populates a user's recipe feed with the latest
+  recipes from followed chefs and recommendations.
+
+  The code is a function called `resolve_recipe_feed` that resolves a recipe
+  feed for a user. It first checks if there is an existing cache for the user's recipe feed. If the
+  cache does not exist, it fetches the user's followings, retrieves their latest published recipes.
+
+  It populates the feed by fetching user followings and their latest recipes. It also includes
+  recommendations from a recommendation service.
+
   """
+  
   user = get_user(info)
   username = user['username'] ## for some reason, i couldn't get feed cache key before setting this variable. reminder: DO NOT DELETE.
   request = info.context['request']
@@ -303,7 +311,6 @@ def resolve_recipe_feed(_, info):
         except Recipe.DoesNotExist:
           pass
         
-      ## todo: add the logic for including recommended feed here
       # adding recommendations from recommendation microservice to feed
       recommendations = cache.get(f"{username}_recommendation_feed")
       print("recommendations feed: ", recommendations)

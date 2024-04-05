@@ -8,7 +8,4 @@ class UpdateChefThread(Thread):
 
   def run(self):
     print("Thread running in background")
-
-    #todo: uncomment this if changes doesn't work
-    # consume_and_update_chef_username()
     consume_kafka_messages()

@@ -156,6 +156,8 @@ type RecipeResponse{
 type RecipeFeedResponse{
   message: String
   feed: [Recipe]
+  "suggested chefs to follow if user is not following any chef to populate feed"
+  suggestions: [String]
 }
 
 "The query resolvers"

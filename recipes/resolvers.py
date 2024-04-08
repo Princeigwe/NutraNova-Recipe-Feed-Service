@@ -17,11 +17,12 @@ from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThrea
 from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
+from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
 
-# todo: do not add the database_sync_to_async decorator, since this function is not being resolved
+#!: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
   try:
     recipe_tag = Tag.objects.get(name=name)
@@ -291,8 +292,10 @@ def resolve_recipe_feed(_, info):
     print(f" {username} following cache:", user_followings_cache)
     feed = []
     if len(user_followings_cache) == 0:
+      chef_suggestions = follow_chefs_recommendations_for_current_user(info)
       return {
-        "message": "Empty. Follow users to populate your feed."
+        "message": "Empty. Follow chefs to populate your feed.",
+        "suggestions": chef_suggestions
       }
     else:
       for user in user_followings_cache:

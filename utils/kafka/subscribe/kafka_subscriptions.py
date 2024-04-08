@@ -66,14 +66,15 @@ def consume_and_update_chef_username(messages):
 
 def consume_user_recommended_feed(messages):
   for message in messages:
+    print("new message: ", message)
     message_chef_username = message.value['username']
     message_recommendations_feed = message.value['recommended_feed']
 
     user_recommendation_feed_cache = cache.get(f"{message_chef_username}_recommendation_feed")
     if not user_recommendation_feed_cache:
       user_recommendation_feed_cache = cache.set( key=f"{message_chef_username}_recommendation_feed", value=message_recommendations_feed, timeout=100 ) # cache timeout set to 100 seconds
-  
-  print(f"{message_chef_username}_recommendations_feed: ", user_recommendation_feed_cache)
+
+  print(f"{message_chef_username}_recommendations_feed: ", cache.get(f"{message_chef_username}_recommendation_feed"))
 
 
 

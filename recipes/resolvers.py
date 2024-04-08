@@ -285,7 +285,7 @@ def resolve_recipe_feed(_, info):
       print( user_followings['data']['userFollowing']['users'] )
       # print( user_followings)
       users = user_followings['data']['userFollowing']['users']
-      user_followings_cache = cache.set( key=f"{user['username']}_followings", value=users, timeout=120 ) # cache timeout set to 120 seconds
+      user_followings_cache = cache.set( key=f"{user['username']}_followings", value=users, timeout=600 ) # cache timeout set to 600 seconds
     
 
     user_followings_cache = cache.get(f"{user['username']}_followings")
@@ -334,7 +334,7 @@ def resolve_recipe_feed(_, info):
           feed.append(recipe_response)
 
       cache_data = { "message": "Recipe feed", "feed": feed }
-      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
+      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=250 )
       print(f"{username} feed cache created")
 
       return{

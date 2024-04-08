@@ -15,12 +15,14 @@ import time
 from threads.like_recipe_thread import LikeRecipeThread
 from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThread
 from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
+from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
+from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
 
-# todo: do not add the database_sync_to_async decorator, since this function is not being resolved
+#!: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
   try:
     recipe_tag = Tag.objects.get(name=name)
@@ -254,10 +256,18 @@ def resolve_edit_recipe(_, info, input):
 @database_sync_to_async
 def resolve_recipe_feed(_, info):
   """
-  The `resolve_recipe_feed` function retrieves a user's recipe feed from the cache, and if it doesn't
-  exist, it fetches the user's followings, retrieves the latest recipe from each following chef, and
-  populates the feed with the recipes.
+  The function `resolve_recipe_feed` retrieves and populates a user's recipe feed with the latest
+  recipes from followed chefs and recommendations.
+
+  The code is a function called `resolve_recipe_feed` that resolves a recipe
+  feed for a user. It first checks if there is an existing cache for the user's recipe feed. If the
+  cache does not exist, it fetches the user's followings, retrieves their latest published recipes.
+
+  It populates the feed by fetching user followings and their latest recipes. It also includes
+  recommendations from a recommendation service.
+
   """
+  
   user = get_user(info)
   username = user['username'] ## for some reason, i couldn't get feed cache key before setting this variable. reminder: DO NOT DELETE.
   request = info.context['request']
@@ -282,8 +292,10 @@ def resolve_recipe_feed(_, info):
     print(f" {username} following cache:", user_followings_cache)
     feed = []
     if len(user_followings_cache) == 0:
+      chef_suggestions = follow_chefs_recommendations_for_current_user(info)
       return {
-        "message": "Empty. Follow users to populate your feed."
+        "message": "Empty. Follow chefs to populate your feed.",
+        "suggestions": chef_suggestions
       }
     else:
       for user in user_followings_cache:
@@ -302,6 +314,25 @@ def resolve_recipe_feed(_, info):
         except Recipe.DoesNotExist:
           pass
         
+      # adding recommendations from recommendation microservice to feed
+      recommendations = cache.get(f"{username}_recommendation_feed")
+      print("recommendations feed: ", recommendations)
+      if not recommendations:
+        pass
+      else:
+        print("Recommendations cache exist")
+        for item in recommendations:
+          recipe = Recipe.objects.get(title=item['recipe_title'], published=item['recipe_published_date'])
+          chef = recipe.chef
+          chef_details = {
+            "username": chef.username,
+            "first_name": chef.first_name,
+            "last_name": chef.last_name
+          }
+          recipe_response = recipe.__dict__ # change recipe instance to dictionary
+          recipe_response['chef'] = chef_details
+          feed.append(recipe_response)
+
       cache_data = { "message": "Recipe feed", "feed": feed }
       cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=180 )
       print(f"{username} feed cache created")
@@ -420,6 +451,13 @@ def resolve_single_recipe_sub(response, obj, pk):
 @database_sync_to_async
 def resolve_like_recipe(_, info, pk):
   user = get_user(info)
+  request = info.context['request']
+
+  # like_click_count to set interval for processing recommendations by the recommendations service
+  like_click_count = request.session.get(f"{user['username']}_like_click_count")
+  if not like_click_count:
+    request.session[f"{user['username']}_like_click_count"] = 0
+
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
 
@@ -427,16 +465,39 @@ def resolve_like_recipe(_, info, pk):
     like_recipe_thread = LikeRecipeThread(user, recipe)
     like_recipe_thread.start()
 
+    like_click_count = request.session.get(f"{user['username']}_like_click_count")
+    like_click_count += 1
+    request.session[f"{user['username']}_like_click_count"] = like_click_count 
+
+    if like_click_count == 5:
+      #* send kafka message to recommendation service to process recommended feed data
+      kafka_recommendation_message = user['username']
+      request_recommended_feed_thread = RequestRecommendedFeedThread(kafka_recommendation_message)
+      request_recommended_feed_thread.start()
+
+      # set session like click count to zero
+      request.session[f"{user['username']}_like_click_count"] = 0
+
+    liker_preferences = {
+      "dietary_preference": user["dietary_preference"],
+      "health_goal":        user["health_goal"],
+      "allergens":          user["allergens"],
+      "activity_level":     user["activity_level"],
+      "cuisines":           user["cuisines"],
+      "medical_conditions": user["medical_conditions"],
+      "taste_preferences":  user["taste_preferences"]
+    }
     # send message to kafka
     kafka_message = {
       "liker_username": user['username'],
       "liker_first_name": user['first_name'],
       "liker_last_name": user['last_name'],
+      "liker_preferences": liker_preferences,
       "recipe_title": recipe.title,
       "recipe_published": str(recipe.published),
     }
 
-    # sending kafka message in background thread
+    # sending kafka message in background thread to create chef-to-recipe :LIKE relationship in recommendations microservice
     graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
     graph_chef_like_recipe_thread.start()
     return f"You liked the recipe by {recipe.chef.username}"

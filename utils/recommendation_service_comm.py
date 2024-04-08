@@ -1,9 +1,12 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 def fetch_recommended_recipes(access_token):
   try:
-    recommendation_service_api_endpoint = "http://127.0.0.1:4000/graphql/"
+    recommendation_service_api_endpoint = os.environ.get('RECOMMENDATION_SERVICE_API_ENDPOINT')
     headers = { "Authorization": f"Bearer {access_token}", 'Content-Type': 'application/json' }
 
     query = f"""

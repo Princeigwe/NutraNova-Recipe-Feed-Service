@@ -150,9 +150,10 @@ type RecipeResponse{
   message: String
   recipe: Recipe
   likes: Int
-  error: String
+
 }
 
+"Response for a feed of recipes tailored to the preferences of the current user"
 type RecipeFeedResponse{
   message: String
   feed: [Recipe]

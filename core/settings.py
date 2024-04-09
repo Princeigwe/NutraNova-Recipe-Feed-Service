@@ -22,18 +22,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
+ENVIRONMENT = os.environ.get("ENVIRONMENT", default="production" )
+
+if ENVIRONMENT == 'production':
+    SECURE_BROWSER_XSS_FILTER = True # protect against cross-site scripting attacks
+    X_FRAME_OPTIONS = 'DENY' # to protect against clickjacking attacks
+    SECURE_SSL_REDIRECT = True # make all non HTTPS traffic redirect  to HTTPS
+    SECURE_HSTS_SECONDS = 3600 # [HTTP Strict Transfer Security] the time in seconds the browser should remember that this application is only accessible using HTTPS
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True # to force every subdomain to be accessible over HTTPS only
+    SECURE_HSTS_PRELOAD =  True # to ensure https connection to website, before actually visiting the website
+    SECURE_CONTENT_TYPE_NOSNIFF = True # 
+    SESSION_COOKIE_SECURE = True # to use session cookie only over HTTPS
+    CSRF_COOKIE_SECURE = True # to secure csrf cookie in HTTPS connection
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') ## to prevent redirects
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$&vhg-f)r%92=v1ngplqdq83&x0$(qbb#299**uks+pa2cg!9l'
+# SECRET_KEY = 'django-insecure-$&vhg-f)r%92=v1ngplqdq83&x0$(qbb#299**uks+pa2cg!9l'
+
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = int(os.environ.get('DEBUG', default=0))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'nutranova-recipe.onrender.com']
+
+
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,9 +60,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    #local apps
+    "recipes.apps.RecipesConfig",
+    "file.apps.FileConfig",
+
 
     # 3rd party apps
     "ariadne_django",
+    "cloudinary",
+    "rest_framework",
+    "channels"
 ]
 
 MIDDLEWARE = [
@@ -75,6 +101,31 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = "core.asgi.application"
+
+
+# configuration for websocket scalability with redis
+# CHANNEL_LAYERS = {
+#     "default": {
+#         # "BACKEND": "asgi_redis.RedisChannelLayer",
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+
+#         "CONFIG": {
+#             # "hosts": [(os.environ.get('REDIS_SERVER_NAME'), 25289)],
+#         },
+#         # "ROUTING": "core.routing.websocket_urlpatterns",
+#     },
+# }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+
+        "CONFIG": {
+            "hosts": [(os.environ.get('REDIS_URL'))],
+        },
+    },
+}
 
 
 # Database
@@ -134,7 +185,22 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+ENVIRONMENT = os.environ.get('ENVIRONMENT')
+
+# cache session engine config for request session storage
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL")
+    }
+}
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"

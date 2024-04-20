@@ -69,7 +69,8 @@ INSTALLED_APPS = [
     "ariadne_django",
     "cloudinary",
     "rest_framework",
-    "channels"
+    "channels",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -206,3 +207,5 @@ CACHES = {
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+CORS_ALLOW_ALL_ORIGINS = True

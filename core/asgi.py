@@ -61,7 +61,7 @@ application = ProtocolTypeRouter({
     # )
 
     # fix for websocket connection not being recognized in API clients asides the browser
-    "websocket": AllowedHostsOriginValidator(
+    "websocket": OriginValidator(
       AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
       ['*']
     )

@@ -69,7 +69,8 @@ INSTALLED_APPS = [
     "ariadne_django",
     "cloudinary",
     "rest_framework",
-    "channels"
+    "channels",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,8 @@ CHANNEL_LAYERS = {
     },
 }
 
+
+CHANNELS_WS_PROTOCOLS = ["graphql-transport-ws", ]
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -204,3 +207,5 @@ CACHES = {
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+CORS_ALLOW_ALL_ORIGINS = True

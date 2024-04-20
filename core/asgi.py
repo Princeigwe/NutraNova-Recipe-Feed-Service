@@ -62,7 +62,8 @@ application = ProtocolTypeRouter({
 
     # fix for websocket connection not being recognized in API clients asides the browser
     "websocket": AllowedHostsOriginValidator(
-      AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+      AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
+      ['*']
     )
         # URLRouter([
         #     path("graphql/", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),

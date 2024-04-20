@@ -128,6 +128,8 @@ CHANNEL_LAYERS = {
 }
 
 
+CHANNELS_WS_PROTOCOLS = ["graphql-transport-ws", ]
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

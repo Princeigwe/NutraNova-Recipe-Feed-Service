@@ -17,7 +17,7 @@ from django.urls import path, re_path
 from ariadne.asgi.handlers import GraphQLTransportWSHandler
 from channels.sessions import SessionMiddlewareStack
 from channels.auth import AuthMiddlewareStack
-from channels.security.websocket import AllowedHostsOriginValidator
+from channels.security.websocket import AllowedHostsOriginValidator, OriginValidator
 from .routing import websocket_urlpatterns
 
 
@@ -56,6 +56,11 @@ application = ProtocolTypeRouter({
             re_path(r"", get_asgi_application())
         ])
     ),
+    # "websocket": AllowedHostsOriginValidator(
+    #   AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+    # )
+
+    # fix for websocket connection not being recognized in API clients asides the browser
     "websocket": AllowedHostsOriginValidator(
       AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
     )

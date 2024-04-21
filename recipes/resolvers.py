@@ -333,16 +333,27 @@ def resolve_recipe_feed(_, info):
           recipe_response['chef'] = chef_details
           feed.append(recipe_response)
 
-      cache_data = { "message": "Recipe feed", "feed": feed }
+      # setting cache for next response in request when there is a cache-miss
+      cache_data = { 
+        "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs", 
+        "feed": feed,
+        "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
+      }
       cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=250 )
       print(f"{username} feed cache created")
 
+      # if there is a no feed cache, this is returned in response
+      feed_cache = cache.get(f"{username}recipe_feed")
       return{
-        "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
-        "feed": feed,
-        "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
-
+        "message": feed_cache['message'],
+        "feed": feed_cache['feed'],
+        "suggestions": feed_cache['suggestions']
       }
+      # return{
+      #   "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
+      #   "feed": feed,
+      #   "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
+      # }
   
   feed_cache = cache.get(f"{username}recipe_feed")
   print(f"data from existing {username} feed cache")

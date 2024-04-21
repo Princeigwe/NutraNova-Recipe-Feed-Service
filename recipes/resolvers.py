@@ -360,7 +360,8 @@ def resolve_recipe_feed(_, info):
   
   return{
     "message": feed_cache['message'],
-    "feed": feed_cache['feed']
+    "feed": feed_cache['feed'],
+    "suggestions": feed_cache['suggestions']
   }
 
 

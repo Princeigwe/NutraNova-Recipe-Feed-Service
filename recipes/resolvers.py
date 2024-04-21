@@ -339,7 +339,9 @@ def resolve_recipe_feed(_, info):
 
       return{
         "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
-        "feed": feed
+        "feed": feed,
+        "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
+
       }
   
   feed_cache = cache.get(f"{username}recipe_feed")

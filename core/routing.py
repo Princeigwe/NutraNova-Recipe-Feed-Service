@@ -12,7 +12,6 @@ websocket_urlpatterns = [
 
 
   # setting for subscription on Apollo GraphOS
-  #! comment this if subscription federation doesn't work for Apollo
-  path("graphql/ws", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
+  # path("graphql/ws", GraphQL(schema=schema, websocket_handler=GraphQLTransportWSHandler(), debug=True)),
   re_path(r"", get_asgi_application()),
 ]

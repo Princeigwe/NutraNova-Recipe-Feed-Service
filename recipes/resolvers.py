@@ -403,7 +403,6 @@ def resolve_my_drafts(_, info):
     recipe_drafts = chef.recipes.filter(status='DRAFT').prefetch_related('tags')
     for draft in recipe_drafts:
       draft_response = model_to_dict(draft, exclude=['tags', 'created', 'published', 'chef'])
-      print("single draft: ", draft_response)
       chef_details = {
             "username": chef.username,
             "first_name": chef.first_name,
@@ -433,8 +432,18 @@ def resolve_draft(_, info, pk):
   user = get_user(info)
   try:
     chef = Chef.objects.get(username=user['username'])
-    draft = chef.recipes.get(pk=pk, status="DRAFT").__dict__
-    return draft
+    recipe_draft = chef.recipes.get(pk=pk, status='DRAFT')
+    draft_response = model_to_dict(recipe_draft, exclude=['tags', 'created', 'published', 'chef'])
+    chef_details = {
+      "username": chef.username,
+      "first_name": chef.first_name,
+      "last_name": chef.last_name
+    }
+    draft_response['tags'] = [tag.name for tag in recipe_draft.tags.all()]
+    draft_response['created'] = recipe_draft.created
+    draft_response['published'] = recipe_draft.published
+    draft_response['chef'] = chef_details
+    return draft_response
   
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")

@@ -398,11 +398,29 @@ def resolve_my_drafts(_, info):
   try:
     chef = Chef.objects.get(username=user['username']) 
 
+    drafts_responses = []
+    # retrieve all tags manay-to-many field for draft in a single fetch 
+    recipe_drafts = chef.recipes.filter(status='DRAFT').prefetch_related('tags')
+    for draft in recipe_drafts:
+      draft_response = model_to_dict(draft, exclude=['tags', 'created', 'published', 'chef'])
+      chef_details = {
+            "username": chef.username,
+            "first_name": chef.first_name,
+            "last_name": chef.last_name
+          }
+      draft_response['tags'] = [tag.name for tag in draft.tags.all()]
+      draft_response['created'] = draft.created
+      draft_response['published'] = draft.published
+      draft_response['chef'] = chef_details
+
+      drafts_responses.append(draft_response)
+    return drafts_responses
+
+    #* not sure this comment is necessary anymore, but I'll leave it
     # recipe query gave the synchronous only operation error even when using the channels database_sync_to_async decorator.
     # wrapping it in list function, retrieved the recipes properly.
     # reference to: https://stackoverflow.com/questions/63149616/getting-synchronousonlyoperation-error-even-after-using-sync-to-async-in-django
-    drafts = list(chef.recipes.filter(status='DRAFT')) 
-    return drafts
+
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")
   except Recipe.DoesNotExist:
@@ -414,8 +432,18 @@ def resolve_draft(_, info, pk):
   user = get_user(info)
   try:
     chef = Chef.objects.get(username=user['username'])
-    draft = chef.recipes.get(pk=pk, status="DRAFT")
-    return draft
+    recipe_draft = chef.recipes.get(pk=pk, status='DRAFT')
+    draft_response = model_to_dict(recipe_draft, exclude=['tags', 'created', 'published', 'chef'])
+    chef_details = {
+      "username": chef.username,
+      "first_name": chef.first_name,
+      "last_name": chef.last_name
+    }
+    draft_response['tags'] = [tag.name for tag in recipe_draft.tags.all()]
+    draft_response['created'] = recipe_draft.created
+    draft_response['published'] = recipe_draft.published
+    draft_response['chef'] = chef_details
+    return draft_response
   
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")

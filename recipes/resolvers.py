@@ -456,8 +456,26 @@ def resolve_my_published_recipes(_, info):
   user = get_user(info)
   try:
     chef = Chef.objects.get(username=user['username'])
-    published_recipes = list(chef.recipes.filter(status="PUBLISHED"))
-    return published_recipes
+    # published_recipes = list(chef.recipes.filter(status="PUBLISHED"))
+    # return published_recipes
+
+    published_responses = []
+    # retrieve all tags manay-to-many field for draft in a single fetch 
+    recipes_published = chef.recipes.filter(status='PUBLISHED').prefetch_related('tags')
+    for recipe in recipes_published:
+      published_recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef'])
+      chef_details = {
+            "username": chef.username,
+            "first_name": chef.first_name,
+            "last_name": chef.last_name
+          }
+      published_recipe_response['tags'] = [tag.name for tag in recipe.tags.all()]
+      published_recipe_response['created'] = recipe.created
+      published_recipe_response['published'] = recipe.published
+      published_recipe_response['chef'] = chef_details
+
+      published_responses.append(published_recipe_response)
+    return published_responses
   except Chef.DoesNotExist:
     raise Exception("Chef data does not exist")
 

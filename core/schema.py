@@ -10,6 +10,7 @@ query.set_field("recipeFeed", resolvers.resolve_recipe_feed)
 query.set_field("myDrafts", resolvers.resolve_my_drafts)
 query.set_field("draft", resolvers.resolve_draft)
 query.set_field("myPublishedRecipes", resolvers.resolve_my_published_recipes)
+query.set_field("search", resolvers.resolve_search)
 
 mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)

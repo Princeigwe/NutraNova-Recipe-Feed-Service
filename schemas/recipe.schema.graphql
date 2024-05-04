@@ -161,6 +161,13 @@ type RecipeFeedResponse{
   suggestions: [String]
 }
 
+
+type RecipeSearchResponse{
+  message: String
+  results: [Recipe]
+}
+
+
 "The query resolvers"
 type Query{
   recipeTags: [String]!
@@ -170,6 +177,8 @@ type Query{
   myPublishedRecipes: [Recipe]
   draft(pk: Int): Recipe
 
+  "search functionality for recipes"
+  search(query: String): RecipeSearchResponse
 }
 
 "The mutation resolvers"

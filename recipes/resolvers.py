@@ -18,6 +18,8 @@ from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipe
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
+from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
+
 
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
@@ -613,3 +615,34 @@ def resolve_delete_recipe(_, info, pk):
     return f"You deleted your recipe: {recipe.title}"
   except Recipe.DoesNotExist as error:
     raise Exception(error)
+
+
+
+def resolve_search(_, info, query):
+  """search functionality for recipes"""
+  get_user(info)
+  search_query = SearchQuery(query, search_type='plain')
+  search_vector = SearchVector('title', 'description')
+  recipes = Recipe.objects.annotate(
+      search=search_vector,
+      rank=SearchRank(search_vector, search_query)
+  ).filter(search=search_query, status="PUBLISHED").order_by("-rank")
+  total_recipes = recipes.count()
+  results = []
+  for recipe in recipes:
+    chef_details = {
+      "username": recipe.chef.username,
+      "first_name": recipe.chef.first_name,
+      "last_name": recipe.chef.last_name
+    }
+    recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef'])
+    recipe_response['tags'] = recipe.tags.all().values_list('name', flat=True)
+    recipe_response['created'] = recipe.created
+    recipe_response['published'] = recipe.published
+    recipe_response['chef'] = chef_details
+    results.append(recipe_response)
+
+  return{
+      "message": "No results found for the given query." if total_recipes == 0 else "Results.",
+      "results": results
+  }

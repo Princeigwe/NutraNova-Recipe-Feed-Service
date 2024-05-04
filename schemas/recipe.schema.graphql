@@ -177,6 +177,7 @@ type Query{
   myPublishedRecipes: [Recipe]
   draft(pk: Int): Recipe
 
+  "search functionality for recipes"
   search(query: String): RecipeSearchResponse
 }
 

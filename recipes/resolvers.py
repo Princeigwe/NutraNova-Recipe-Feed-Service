@@ -1,4 +1,4 @@
-from .models import Recipe, Tag, Chef, Like
+from .models import Recipe, Tag, Chef, Like, Comment
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
@@ -20,7 +20,7 @@ from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 
-
+#* get_user(info) function in resolver functions are called to facilitate authenticated requests
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
 
@@ -617,7 +617,6 @@ def resolve_delete_recipe(_, info, pk):
     raise Exception(error)
 
 
-
 def resolve_search(_, info, query):
   """search functionality for recipes"""
   get_user(info)
@@ -646,3 +645,35 @@ def resolve_search(_, info, query):
       "message": "No results found for the given query." if total_recipes == 0 else "Results.",
       "results": results
   }
+
+
+def resolve_comment_on_recipe(_, info, input: dict):
+  user = get_user(info)
+  try:
+    recipe = Recipe.objects.get(id=input['id'], status="PUBLISHED")
+    writer = Chef.objects.get(username=user['username'])
+    comment = Comment.objects.create(
+      writer = writer,
+      recipe = recipe,
+      content = input['content']
+    )
+    comment.save()
+    return {
+      "message": "Content published.",
+      "comment": comment
+    }
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe does not exist")
+
+
+def resolve_recipe_comments(_, info, pk):
+  get_user(info)
+  try:
+    recipe = Recipe.objects.get(id=pk)
+    comments = recipe.comments.all()
+    return{
+      "message": "Recipe comments",
+      "comments": comments
+    }
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe does not exist")

@@ -204,6 +204,7 @@ type Query{
   search(query: String): RecipeSearchResponse
   "fetch comments to a recipe"
   recipeComments(pk: Int): RecipeCommentsResponse
+  mySavedRecipes: [Recipe]
 }
 
 "The mutation resolvers"
@@ -214,6 +215,8 @@ type Mutation{
   unLikeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
   commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
+  "save recipe for later interaction"
+  saveForLater(pk: Int): String
 }
 
 "This operation works for a single recipe, in order to know the number of likes it has in real time"

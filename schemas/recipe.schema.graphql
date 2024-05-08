@@ -167,6 +167,23 @@ type RecipeSearchResponse{
   results: [Recipe]
 }
 
+input RecipeCommentInput{
+  id: Int!
+  content: String!
+}
+
+
+type Comment{
+  writer: Chef
+  content: String
+  created: String
+}
+
+type RecipeCommentResponse{
+  message: String
+  comment: Comment
+}
+
 
 "The query resolvers"
 type Query{
@@ -188,6 +205,7 @@ type Mutation{
   likeRecipe(pk: Int): String
   unLikeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
+  commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
 }
 
 "This operation works for a single recipe, in order to know the number of likes it has in real time"

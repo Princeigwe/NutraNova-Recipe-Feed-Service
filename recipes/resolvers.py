@@ -20,7 +20,7 @@ from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 
-
+#* get_user(info) function in resolver functions are called to facilitate authenticated requests
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
 
@@ -661,6 +661,19 @@ def resolve_comment_on_recipe(_, info, input: dict):
     return {
       "message": "Content published.",
       "comment": comment
+    }
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe does not exist")
+
+
+def resolve_recipe_comments(_, info, pk):
+  get_user(info)
+  try:
+    recipe = Recipe.objects.get(id=pk)
+    comments = recipe.comments.all()
+    return{
+      "message": "Recipe comments",
+      "comments": comments
     }
   except Recipe.DoesNotExist:
     raise Exception("Recipe does not exist")

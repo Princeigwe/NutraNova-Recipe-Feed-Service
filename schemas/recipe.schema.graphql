@@ -185,6 +185,12 @@ type RecipeCommentResponse{
 }
 
 
+type RecipeCommentsResponse{
+  message: String
+  comments: [Comment]
+}
+
+
 "The query resolvers"
 type Query{
   recipeTags: [String]!
@@ -196,6 +202,8 @@ type Query{
 
   "search functionality for recipes"
   search(query: String): RecipeSearchResponse
+  "fetch comments to a recipe"
+  recipeComments(pk: Int): RecipeCommentsResponse
 }
 
 "The mutation resolvers"

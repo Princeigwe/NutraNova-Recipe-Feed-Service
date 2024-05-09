@@ -10,6 +10,7 @@ def follow_chefs_recommendations_for_current_user(info):
   access_token = get_access_token(request)
   recommendation_response = fetch_recommended_recipes(access_token)
   recommendations = recommendation_response['data']['recommendFeedForNewUser']
+  print("Recommendations fetched from recommendations microservice: ",recommendations)
 
   suggested_chefs = []
   for item in recommendations:

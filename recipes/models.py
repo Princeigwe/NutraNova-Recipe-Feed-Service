@@ -62,4 +62,23 @@ class Like(models.Model):
   recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="likes")
 
   def __str__(self) -> str:
-    return self.user.username
+    return self.liker.username
+
+
+class Comment(models.Model):
+  writer  = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='comments')
+  recipe  = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='comments')
+  content = models.CharField(max_length=300)
+  created = models.DateTimeField(auto_now_add=True)
+
+  def __str__(self) -> str:
+    return self.writer.username
+
+
+class SavedRecipe(models.Model):
+  chef   = models.ForeignKey(Chef, on_delete=models.CASCADE, related_name='saves')
+  recipe  = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+
+  def __str__(self) -> str:
+    return self.chef.username
+

@@ -682,7 +682,7 @@ def resolve_recipe_comments(_, info, pk):
 def resolve_save_for_later(_, info, pk):
   user = get_user(info)
   try:
-    chef = Chef.objects.get(username=user['username'])
+    chef = Chef.objects.get(username=user['username']) # chef here is the current logged in user
     recipe = Recipe.objects.get(id=pk, status="PUBLISHED")
     SavedRecipe.objects.get(chef=chef, recipe=recipe)
     return "Recipe saved"
@@ -692,4 +692,25 @@ def resolve_save_for_later(_, info, pk):
     return "Recipe saved"
   except Recipe.DoesNotExist:
     raise Exception("Recipe does not exist")
-    
+
+
+def resolve_my_saved_recipes(_, info):
+  user = get_user(info)
+  chef = Chef.objects.get(username=user['username']) # chef here is the current logged in user
+  saved_recipes = SavedRecipe.objects.select_related('recipe').filter(chef=chef)
+  recipes_response = []
+  for save in saved_recipes:
+    recipe = model_to_dict(save.recipe, exclude=['tags', 'created', 'published', 'chef'])
+    chef_detail = {
+      "username": save.recipe.chef.username,
+      "first_name": save.recipe.chef.first_name,
+      "last_name": save.recipe.chef.last_name
+    }
+    recipe['tags'] = save.recipe.tags.all().values_list('name', flat=True)
+    recipe['chef'] = chef_detail
+    recipe['created'] = save.recipe.created
+    recipe['published'] = save.recipe.published
+
+    recipes_response.append(recipe)
+
+  return recipes_response

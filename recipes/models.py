@@ -66,10 +66,11 @@ class Like(models.Model):
 
 
 class Comment(models.Model):
-  writer  = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='comments')
-  recipe  = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='comments')
+  writer  = models.ForeignKey(Chef, on_delete=models.CASCADE, related_name='comments')
+  recipe  = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='comments', null=True, blank=True)
   content = models.CharField(max_length=300)
   created = models.DateTimeField(auto_now_add=True)
+  parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
 
   def __str__(self) -> str:
     return self.writer.username

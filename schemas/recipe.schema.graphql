@@ -167,6 +167,7 @@ type RecipeSearchResponse{
   results: [Recipe]
 }
 
+"This schema will be used as input for commenting on a recipe, and commenting on a comment"
 input RecipeCommentInput{
   id: Int!
   content: String!
@@ -174,11 +175,13 @@ input RecipeCommentInput{
 
 
 type Comment{
+  id: Int
   writer: Chef
   content: String
   created: String
 }
 
+"This schema will be used as a schema response on the comment created on a recipe, and on a comment"
 type RecipeCommentResponse{
   message: String
   comment: Comment
@@ -204,6 +207,9 @@ type Query{
   search(query: String): RecipeSearchResponse
   "fetch comments to a recipe"
   recipeComments(pk: Int): RecipeCommentsResponse
+
+  "fetch child comments to a parent comment"
+  commentReplies(pk: Int): RecipeCommentsResponse
   mySavedRecipes: [Recipe]
 }
 
@@ -215,6 +221,10 @@ type Mutation{
   unLikeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
   commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
+
+  "the id property of the RecipeCommentInput here is the pk key of the comment model the user will be commenting on "
+  commentOnComment(input: RecipeCommentInput): RecipeCommentResponse
+
   "save recipe for later interaction"
   saveForLater(pk: Int): String
 }

@@ -679,6 +679,38 @@ def resolve_recipe_comments(_, info, pk):
     raise Exception("Recipe does not exist")
 
 
+def resolve_comment_on_comment(_, info, input: dict):
+  user = get_user(info)
+  try:
+    parent_comment = Comment.objects.get(id=input['id'])
+    writer = Chef.objects.get(username=user['username'])
+    child_comment = Comment.objects.create(
+      writer = writer,
+      parent_comment = parent_comment,
+      content = input['content']
+    )
+    child_comment.save()
+    return {
+      "message": "Comment published.",
+      "comment": child_comment
+    }
+  except Comment.DoesNotExist:
+    raise Exception("Comment does not exist")
+
+
+def resolve_comment_replies(_, info, pk):
+  get_user(info)
+  try:
+    parent_comment = Comment.objects.get(id=pk)
+    child_comments = parent_comment.replies.all()
+    return {
+      "message": "Comment replies",
+      "comments": child_comments
+    }
+  except Comment.DoesNotExist:
+    raise("Comment does not exist")
+
+
 def resolve_save_for_later(_, info, pk):
   user = get_user(info)
   try:

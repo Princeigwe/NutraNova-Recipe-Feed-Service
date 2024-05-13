@@ -22,6 +22,7 @@ mutation.set_field("unLikeRecipe", resolvers.resolve_unlike_recipe)
 mutation.set_field("deleteRecipe", resolvers.resolve_delete_recipe)
 mutation.set_field("commentOnRecipe", resolvers.resolve_comment_on_recipe)
 mutation.set_field("saveForLater", resolvers.resolve_save_for_later)
+mutation.set_field("commentOnComment", resolvers.resolve_comment_on_comment)
 
 subscription = SubscriptionType()
 subscription.set_field("singleRecipe", resolvers.resolve_single_recipe_sub)

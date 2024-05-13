@@ -207,6 +207,9 @@ type Query{
   search(query: String): RecipeSearchResponse
   "fetch comments to a recipe"
   recipeComments(pk: Int): RecipeCommentsResponse
+
+  "fetch child comments to a parent comment"
+  commentReplies(pk: Int): RecipeCommentsResponse
   mySavedRecipes: [Recipe]
 }
 

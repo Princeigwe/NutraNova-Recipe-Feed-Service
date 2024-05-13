@@ -698,6 +698,19 @@ def resolve_comment_on_comment(_, info, input: dict):
     raise Exception("Comment does not exist")
 
 
+def resolve_comment_replies(_, info, pk):
+  get_user(info)
+  try:
+    parent_comment = Comment.objects.get(id=pk)
+    child_comments = parent_comment.replies.all()
+    return {
+      "message": "Comment replies",
+      "comments": child_comments
+    }
+  except Comment.DoesNotExist:
+    raise("Comment does not exist")
+
+
 def resolve_save_for_later(_, info, pk):
   user = get_user(info)
   try:

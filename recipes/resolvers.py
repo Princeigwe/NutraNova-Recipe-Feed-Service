@@ -579,12 +579,13 @@ def resolve_up_vote_recipe(_, info, pk):
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
     voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
-    voter_upVotes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
-    if voter_upVotes_count == 0:
-      upVote_objects = []
+    voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
+    voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
+    if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
+      up_vote_objects = []
       for i in range(voter.vote_strength):
-        upVote_objects.append( UpVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
-      UpVote.objects.bulk_create(upVote_objects) # saving the objects
+        up_vote_objects.append( UpVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
+      UpVote.objects.bulk_create(up_vote_objects) # saving the objects
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already.")
@@ -624,6 +625,27 @@ def resolve_unlike_recipe(_, info, pk):
     pass
   except Like.DoesNotExist:
     return f"You un-liked recipe by {recipe.chef.username}"
+
+
+def resolve_down_vote_recipe(_, info, pk):
+  user = get_user(info)
+  try:
+    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
+    voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
+    voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
+    if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
+      down_vote_objects = []
+      for i in range(voter.vote_strength):
+        down_vote_objects.append( DownVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
+      DownVote.objects.bulk_create(down_vote_objects) # saving the objects
+      return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
+    else:
+      raise Exception("You have casted your vote already")
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe does not exist")
+  except Chef.DoesNotExist:
+    raise Exception("Chef does not exist")
 
 
 @database_sync_to_async

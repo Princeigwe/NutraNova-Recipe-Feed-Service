@@ -155,7 +155,7 @@ type RecipeResponse{
   "number of up-votes"
   up_votes: Int
   "details of up-voters"
-  upVoters: [Chef]
+  up_voters: [Chef]
   "number of down-votes"
   down_votes: Int
   "details of down-voters"

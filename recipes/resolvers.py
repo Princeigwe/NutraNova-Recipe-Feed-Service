@@ -490,8 +490,18 @@ async def single_recipe_sub_generator(_, info, pk):
       recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
       chef = await database_sync_to_async(lambda: recipe.chef)()
       likes =  await database_sync_to_async(recipe.likes.count)()
-      up_votes = await database_sync_to_async(recipe.upVotes.count)()
-      down_votes = await database_sync_to_async(recipe.downVotes.count)()
+
+      number_of_up_votes = await database_sync_to_async(recipe.upVotes.count)()
+      recipe_up_votes = await database_sync_to_async(recipe.upVotes.all)()
+      up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
+      # making this unique for voters with vote_strength > 1.
+      unique_up_voters = list(set(up_voters))
+
+      number_of_down_votes = await database_sync_to_async(recipe.downVotes.count)()
+      recipe_down_votes = await database_sync_to_async(recipe.downVotes.all)()
+      down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
+      unique_down_voters = list(set(down_voters))
+
 
       chef_details = {
         "username": chef.username,
@@ -510,8 +520,10 @@ async def single_recipe_sub_generator(_, info, pk):
       response = {
         "recipe": recipe_response,
         "likes": likes,
-        "up_votes": up_votes,
-        "down_votes": down_votes
+        "up_votes": number_of_up_votes,
+        "up_voters": unique_up_voters,
+        "down_votes": number_of_down_votes,
+        "down_voters": unique_down_voters
       }
       yield response
     except Recipe.DoesNotExist as error:

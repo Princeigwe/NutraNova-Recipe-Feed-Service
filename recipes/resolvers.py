@@ -490,11 +490,15 @@ async def single_recipe_sub_generator(_, info, pk):
       recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
       chef = await database_sync_to_async(lambda: recipe.chef)()
       likes =  await database_sync_to_async(recipe.likes.count)()
+      up_votes = await database_sync_to_async(recipe.upVotes.count)()
+      down_votes = await database_sync_to_async(recipe.downVotes.count)()
 
       chef_details = {
         "username": chef.username,
         "first_name": chef.first_name,
-        "last_name": chef.last_name
+        "last_name": chef.last_name,
+        "vote_strength": chef.vote_strength,
+        "is_verified": chef.is_verified
       }
       recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef'])
       recipe_response['chef'] = chef_details
@@ -505,7 +509,9 @@ async def single_recipe_sub_generator(_, info, pk):
       recipe_response['chef'] = chef_details
       response = {
         "recipe": recipe_response,
-        "likes": likes
+        "likes": likes,
+        "up_votes": up_votes,
+        "down_votes": down_votes
       }
       yield response
     except Recipe.DoesNotExist as error:

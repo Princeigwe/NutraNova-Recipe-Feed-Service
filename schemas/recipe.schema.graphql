@@ -221,6 +221,7 @@ type Mutation{
   unLikeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
   commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
+  upVoteRecipe(pk: Int): String
 
   "the id property of the RecipeCommentInput here is the pk key of the comment model the user will be commenting on "
   commentOnComment(input: RecipeCommentInput): RecipeCommentResponse

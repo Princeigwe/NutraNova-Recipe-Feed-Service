@@ -16,9 +16,11 @@ class Tag(models.Model):
 
 
 class Chef(models.Model):
-  username = models.CharField(max_length=100, db_index=True)
+  username      = models.CharField(max_length=100, db_index=True)
   first_name    = models.CharField(max_length=20, default='')
   last_name     = models.CharField(max_length=20, default='')
+  vote_strength = models.IntegerField(default=1) # this attr determines the number of vote the user gives at a single click when voting for a recipe
+  is_verified   = models.BooleanField(default=False)
 
   def __str__(self) -> str:
     return self.username
@@ -63,6 +65,22 @@ class Like(models.Model):
 
   def __str__(self) -> str:
     return self.liker.username
+
+
+class UpVote(models.Model):
+  voter = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="upVotes")
+
+  def __str__(self) -> str:
+    return self.voter
+
+
+class DownVote(models.Model):
+  voter = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
+  recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="downVotes")
+
+  def __str__(self) -> str:
+    return self.voter
 
 
 class Comment(models.Model):

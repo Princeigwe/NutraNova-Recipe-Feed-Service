@@ -1,4 +1,4 @@
-from .models import Recipe, Tag, Chef, Like, Comment, SavedRecipe
+from .models import Recipe, Tag, Chef, Like, Comment, SavedRecipe, UpVote, DownVote
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
@@ -572,6 +572,27 @@ def resolve_like_recipe(_, info, pk):
   
   except Recipe.DoesNotExist as error:
     raise Exception(error)
+
+
+def resolve_up_vote_recipe(_, info, pk):
+  user = get_user(info)
+  try:
+    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
+    voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter_upVotes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
+    if voter_upVotes_count == 0:
+      upVote_objects = []
+      for i in range(voter.vote_strength):
+        upVote_objects.append( UpVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
+      UpVote.objects.bulk_create(upVote_objects) # saving the objects
+      return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
+    else:
+      raise Exception("You have casted your vote already.")
+  except Recipe.DoesNotExist:
+    raise Exception("Recipe does not exist")
+  except Chef.DoesNotExist:
+    raise Exception("Chef does not exist")
+
 
 
 @database_sync_to_async

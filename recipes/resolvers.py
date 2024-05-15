@@ -367,33 +367,6 @@ def resolve_recipe_feed(_, info):
   }
 
 
-# this resolver is currently not active in any operation, but i still don't want to delete it :|
-def resolve_single_recipe(_, info, pk):
-  user = get_user(info)
-  existing_single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
-  if existing_single_recipe_cache == None:
-    try:
-      recipe = Recipe.objects.get(pk=pk)
-      if (recipe.status == "PUBLISHED"):
-        cache.set(key=f"{user['username']}_fetch_recipe{pk}", value=recipe, timeout=60)
-        print("single recipe cache set")
-        return{
-          "message": "Recipe",
-          "recipe": recipe
-        }
-      else:
-        return{ "message": "Forbidden request" }
-    except Recipe.DoesNotExist:
-      raise Exception("Recipe does not exist")
-  
-  single_recipe_cache = cache.get(f"{user['username']}_fetch_recipe{pk}")
-  print("data from existing single recipe cache")
-  return{
-        "message": "Recipe",
-        "recipe": single_recipe_cache
-      }
-
-
 @database_sync_to_async
 def resolve_my_drafts(_, info):
   user = get_user(info)

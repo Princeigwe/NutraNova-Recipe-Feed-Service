@@ -13,12 +13,13 @@ from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
 from threads.like_recipe_thread import LikeRecipeThread
-from threads.kafka_graph_chef_like_recipe_thread import GraphChefLikeRecipeThread
+from threads.kafka_graph_chef_vote_recipe_thread import GraphChefVoteRecipeThread
 from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
+from enums.choices import VoteType
 
 #* get_user(info) function in resolver functions are called to facilitate authenticated requests, and get user details
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
@@ -131,7 +132,9 @@ def resolve_create_recipe(_, info, input: dict):
     chef_details = {
       "username": recipe.chef.username,
 			"first_name": recipe.chef.first_name,
-			"last_name": recipe.chef.last_name
+			"last_name": recipe.chef.last_name,
+      "vote_strength": recipe.chef.vote_strength,
+      "is_verified": recipe.chef.is_verified
     }
 
     # convert all recipe instance keys, except for "tags" to dict keys and assign to recipe_response variable
@@ -194,7 +197,9 @@ def resolve_edit_recipe(_, info, input):
     chef_details = {
       "username": existing_recipe.chef.username,
 			"first_name": existing_recipe.chef.first_name,
-			"last_name": existing_recipe.chef.last_name
+			"last_name": existing_recipe.chef.last_name,
+      "vote_strength": existing_recipe.chef.vote_strength,
+      "is_verified": existing_recipe.chef.is_verified
     }
 
     chef_preferences = {
@@ -557,8 +562,8 @@ def resolve_like_recipe(_, info, pk):
     }
 
     # sending kafka message in background thread to create chef-to-recipe :LIKE relationship in recommendations microservice
-    graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
-    graph_chef_like_recipe_thread.start()
+    # graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
+    # graph_chef_like_recipe_thread.start()
     return f"You liked the recipe by {recipe.chef.username}"
   
   except Recipe.DoesNotExist as error:
@@ -577,6 +582,31 @@ def resolve_up_vote_recipe(_, info, pk):
       for i in range(voter.vote_strength):
         up_vote_objects.append( UpVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
       UpVote.objects.bulk_create(up_vote_objects) # saving the objects
+
+      voter_preferences = {
+        "dietary_preference": user["dietary_preference"],
+        "health_goal":        user["health_goal"],
+        "allergens":          user["allergens"],
+        "activity_level":     user["activity_level"],
+        "cuisines":           user["cuisines"],
+        "medical_conditions": user["medical_conditions"],
+        "taste_preferences":  user["taste_preferences"]
+      }
+      # send message to kafka
+      kafka_message = {
+        "voter_username": user['username'],
+        "voter_first_name": user['first_name'],
+        "voter_last_name": user['last_name'],
+        "voter_preferences": voter_preferences,
+        "vote_type": VoteType.UP_VOTED.value,
+        "recipe_title": recipe.title,
+        "recipe_published": str(recipe.published),
+      }
+
+      # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
+      graph_chef_like_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
+      graph_chef_like_recipe_thread.start()
+      
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already.")
@@ -622,7 +652,7 @@ def resolve_down_vote_recipe(_, info, pk):
   user = get_user(info)
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-    voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):

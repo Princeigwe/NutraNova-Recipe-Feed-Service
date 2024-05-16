@@ -5,12 +5,13 @@ from dotenv import load_dotenv
 load_dotenv()
 from utils.kafka import kafka_config
 
-topic = os.environ.get('UPSTASH_KAFKA_CHEF_LIKE_REL_RECIPE_TOPIC')
+topic = os.environ.get('UPSTASH_KAFKA_CHEF_VOTE_RECIPE_REL_TOPIC')
+
 if type(topic) == bytes:
   topic = topic.decode('utf-8')
 
 
-def send_chef_like_recipe_details(message: dict):
+def send_chef_vote_recipe_details(message: dict):
   future = kafka_config.producer.send(topic, message)
 
   try:

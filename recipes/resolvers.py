@@ -660,6 +660,30 @@ def resolve_down_vote_recipe(_, info, pk):
       for i in range(voter.vote_strength):
         down_vote_objects.append( DownVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
       DownVote.objects.bulk_create(down_vote_objects) # saving the objects
+
+      voter_preferences = {
+        "dietary_preference": user["dietary_preference"],
+        "health_goal":        user["health_goal"],
+        "allergens":          user["allergens"],
+        "activity_level":     user["activity_level"],
+        "cuisines":           user["cuisines"],
+        "medical_conditions": user["medical_conditions"],
+        "taste_preferences":  user["taste_preferences"]
+      }
+      # send message to kafka
+      kafka_message = {
+        "voter_username": user['username'],
+        "voter_first_name": user['first_name'],
+        "voter_last_name": user['last_name'],
+        "voter_preferences": voter_preferences,
+        "vote_type": VoteType.DOWN_VOTED.value,
+        "recipe_title": recipe.title,
+        "recipe_published": str(recipe.published),
+      }
+
+      # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
+      graph_chef_like_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
+      graph_chef_like_recipe_thread.start()
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already")

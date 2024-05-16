@@ -102,6 +102,8 @@ type Chef{
   username: String
   first_name: String
   last_name: String
+  vote_strength: Int
+  is_verified: Boolean
 }
 
 
@@ -149,8 +151,15 @@ type Like{
 type RecipeResponse{
   message: String
   recipe: Recipe
-  likes: Int
-
+  # likes: Int
+  "number of up-votes"
+  up_votes: Int
+  "details of up-voters"
+  up_voters: [Chef]
+  "number of down-votes"
+  down_votes: Int
+  "details of down-voters"
+  downVoters: [Chef]
 }
 
 "Response for a feed of recipes tailored to the preferences of the current user"
@@ -221,6 +230,8 @@ type Mutation{
   unLikeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
   commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
+  upVoteRecipe(pk: Int): String
+  downVoteRecipe(pk: Int): String
 
   "the id property of the RecipeCommentInput here is the pk key of the comment model the user will be commenting on "
   commentOnComment(input: RecipeCommentInput): RecipeCommentResponse

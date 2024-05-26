@@ -226,7 +226,6 @@ type Query{
 type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse
-  likeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
   commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
   upVoteRecipe(pk: Int): String

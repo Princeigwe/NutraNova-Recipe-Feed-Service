@@ -533,63 +533,6 @@ def resolve_single_recipe_sub(response, obj, pk):
   return response
 
 
-@database_sync_to_async
-def resolve_like_recipe(_, info, pk):
-  user = get_user(info)
-  request = info.context['request']
-
-  # like_click_count to set interval for processing recommendations by the recommendations service
-  like_click_count = request.session.get(f"{user['username']}_like_click_count")
-  if not like_click_count:
-    request.session[f"{user['username']}_like_click_count"] = 0
-
-  try:
-    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-
-    # like recipe in background thread
-    like_recipe_thread = LikeRecipeThread(user, recipe)
-    like_recipe_thread.start()
-
-    like_click_count = request.session.get(f"{user['username']}_like_click_count")
-    like_click_count += 1
-    request.session[f"{user['username']}_like_click_count"] = like_click_count 
-
-    if like_click_count == 5:
-      #* send kafka message to recommendation service to process recommended feed data
-      kafka_recommendation_message = user['username']
-      request_recommended_feed_thread = RequestRecommendedFeedThread(kafka_recommendation_message)
-      request_recommended_feed_thread.start()
-
-      # set session like click count to zero
-      request.session[f"{user['username']}_like_click_count"] = 0
-
-    liker_preferences = {
-      "dietary_preference": user["dietary_preference"],
-      "health_goal":        user["health_goal"],
-      "allergens":          user["allergens"],
-      "activity_level":     user["activity_level"],
-      "cuisines":           user["cuisines"],
-      "medical_conditions": user["medical_conditions"],
-      "taste_preferences":  user["taste_preferences"]
-    }
-    # send message to kafka
-    kafka_message = {
-      "liker_username": user['username'],
-      "liker_first_name": user['first_name'],
-      "liker_last_name": user['last_name'],
-      "liker_preferences": liker_preferences,
-      "recipe_title": recipe.title,
-      "recipe_published": str(recipe.published),
-    }
-
-    # sending kafka message in background thread to create chef-to-recipe :LIKE relationship in recommendations microservice
-    # graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
-    # graph_chef_like_recipe_thread.start()
-    return f"You liked the recipe by {recipe.chef.username}"
-  
-  except Recipe.DoesNotExist as error:
-    raise Exception(error)
-
 
 # todo: add code for vote cache count that will be used in calculating when to fetch feed, just like in the resolve_like_recipe function
 def resolve_up_vote_recipe(_, info, pk):

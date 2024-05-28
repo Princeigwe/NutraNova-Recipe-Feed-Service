@@ -1,5 +1,4 @@
 from django.apps import AppConfig
-# from utils.kafka.subscribe.kafka_subscriptions import consume_and_update_chef_username
 import os
 from django.core.management import call_command
 

@@ -16,10 +16,11 @@ def consume_kafka_messages():
     'auto.offset.reset': 'latest'
   }
 
-  UPSTASH_KAFKA_CHEF_USERNAME_TOPIC = os.environ.get('UPSTASH_KAFKA_CHEF_USERNAME_TOPIC')
+  UPSTASH_KAFKA_USER_DATA_UPDATE_TOPIC = os.environ.get('UPSTASH_KAFKA_USER_DATA_UPDATE_TOPIC')
   UPSTASH_KAFKA_SEND_USER_RECOMMENDATIONS_TOPIC = os.environ.get('UPSTASH_KAFKA_SEND_USER_RECOMMENDATIONS_TOPIC')
+  
 
-  topics = [ UPSTASH_KAFKA_CHEF_USERNAME_TOPIC, UPSTASH_KAFKA_SEND_USER_RECOMMENDATIONS_TOPIC ]
+  topics = [ UPSTASH_KAFKA_USER_DATA_UPDATE_TOPIC, UPSTASH_KAFKA_SEND_USER_RECOMMENDATIONS_TOPIC ]
 
   # adding "api_version" on initialization fixes the issue "kafka.errors.NoBrokersAvailable"
   consumer = KafkaConsumer(
@@ -42,22 +43,36 @@ def consume_kafka_messages():
     # for each topic, retrieve all messages in the record
     # call the functions for their respective messages
     for topic_partition, messages in all_records.items():
-      if topic_partition.topic == UPSTASH_KAFKA_CHEF_USERNAME_TOPIC:
-        consume_and_update_chef_username(messages)
+      if topic_partition.topic == UPSTASH_KAFKA_USER_DATA_UPDATE_TOPIC:
+        consume_and_update_chef_data(messages)
       elif topic_partition.topic == UPSTASH_KAFKA_SEND_USER_RECOMMENDATIONS_TOPIC:
         consume_user_recommended_feed(messages)
 
 
-def consume_and_update_chef_username(messages):
+
+def consume_and_update_chef_data(messages):
   for message in messages:
     try:
       print(f"Received message: {message.value}")
       # import statement for model is placed here because of the "Apps aren't loaded yet" message on Django server startup with background 
       from recipes.models import Chef
-      chef = Chef.objects.get(username=message.value['old_username'])
-      chef.username = message.value['new_username']
-      chef.save()
-      print(f"{chef.first_name} username is now {chef.username}")
+
+      # checking if 'old_username' key is in kafka message. this handles the operation for just updating the username of the Recipe chef
+      if 'old_username' in message.value:
+        chef = Chef.objects.get(username=message.value['old_username'])
+        chef.username = message.value['new_username']
+        chef.save()
+        print(f"{chef.username} username updated")
+      
+      # this is a response operation for the 'updateProfile' resolver in the user microservice
+      else:
+        chef = Chef.objects.get(username=message.value['username'])
+        chef.first_name = message.value['first_name']
+        chef.last_name = message.value['last_name']
+        chef.vote_strength = message.value['vote_strength']
+        chef.is_verified = message.value['is_verified']
+        chef.save()
+        print(f"{chef.username} data updated")
     except Chef.DoesNotExist:
       pass
     except KeyboardInterrupt:

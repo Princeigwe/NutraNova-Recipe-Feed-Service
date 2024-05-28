@@ -1,5 +1,5 @@
 from threading import Thread
-from utils.kafka.subscribe.kafka_subscriptions import consume_and_update_chef_username, consume_kafka_messages
+from utils.kafka.subscribe.kafka_subscriptions import consume_kafka_messages
 
 class UpdateChefThread(Thread):
   """this thread will be responsible for running the kafka consumer that will be listening for updated usernames to update chef data, in the background"""

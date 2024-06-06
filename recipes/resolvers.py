@@ -1,4 +1,4 @@
-from .models import Recipe, Tag, Chef, Like, Comment, SavedRecipe, UpVote, DownVote
+from .models import Recipe, Tag, Chef, Comment, SavedRecipe, UpVote, DownVote
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
@@ -12,9 +12,7 @@ import asyncio
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
-from threads.like_recipe_thread import LikeRecipeThread
 from threads.kafka_graph_chef_vote_recipe_thread import GraphChefVoteRecipeThread
-from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
@@ -532,7 +530,6 @@ def resolve_single_recipe_sub(response, obj, pk):
 
 
 
-# todo: add code for vote cache count that will be used in calculating when to fetch feed, just like in the resolve_like_recipe function
 def resolve_up_vote_recipe(_, info, pk):
   user = get_user(info)
   request = info.context['request']
@@ -575,8 +572,8 @@ def resolve_up_vote_recipe(_, info, pk):
       }
 
       # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_like_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_like_recipe_thread.start()
+      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
+      graph_chef_vote_recipe_thread.start()
       
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
@@ -629,8 +626,8 @@ def resolve_down_vote_recipe(_, info, pk):
       }
 
       # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_like_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_like_recipe_thread.start()
+      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
+      graph_chef_vote_recipe_thread.start()
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already")

@@ -44,8 +44,8 @@ class Recipe(models.Model):
   thumbnail         = models.URLField(max_length=500, default="", blank=True, null= True)
   tags              = models.ManyToManyField(Tag)
   nutritional_value = models.JSONField(default=dict)
-  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='recipes')
-  status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT")
+  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='recipes', db_index=True)
+  status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT", db_index=True)
   created           = models.DateTimeField(auto_now_add=True)
   published         = models.DateTimeField(auto_now=True)
 
@@ -95,8 +95,8 @@ class Comment(models.Model):
 
 
 class SavedRecipe(models.Model):
-  chef   = models.ForeignKey(Chef, on_delete=models.CASCADE, related_name='saves')
-  recipe  = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+  chef   = models.ForeignKey(Chef, on_delete=models.CASCADE, related_name='saves', db_index=True)
+  recipe  = models.ForeignKey(Recipe, on_delete=models.CASCADE, db_index=True)
 
   def __str__(self) -> str:
     return self.chef.username

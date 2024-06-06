@@ -488,7 +488,6 @@ async def single_recipe_sub_generator(_, info, pk):
     try:
       recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
       chef = await database_sync_to_async(lambda: recipe.chef)()
-      likes =  await database_sync_to_async(recipe.likes.count)()
 
       number_of_up_votes = await database_sync_to_async(recipe.upVotes.count)()
       recipe_up_votes = await database_sync_to_async(recipe.upVotes.all)()
@@ -518,7 +517,6 @@ async def single_recipe_sub_generator(_, info, pk):
       recipe_response['chef'] = chef_details
       response = {
         "recipe": recipe_response,
-        "likes": likes,
         "up_votes": number_of_up_votes,
         "up_voters": unique_up_voters,
         "down_votes": number_of_down_votes,

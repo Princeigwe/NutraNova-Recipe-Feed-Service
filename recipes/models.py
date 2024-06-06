@@ -59,14 +59,6 @@ class Recipe(models.Model):
 
 
 
-class Like(models.Model):
-  liker = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
-  recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="likes")
-
-  def __str__(self) -> str:
-    return self.liker.username
-
-
 class UpVote(models.Model):
   voter = models.ForeignKey(Chef, on_delete=models.DO_NOTHING)
   recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="upVotes")

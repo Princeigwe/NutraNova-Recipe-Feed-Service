@@ -74,7 +74,7 @@ input CreateRecipeInput{
   preparation_time: TimeInput!
   cooking_time: TimeInput!
   servings: Int!
-  images: [String]
+  images: [String!]!
   tags: [String!]!
   video: String
   thumbnail: String

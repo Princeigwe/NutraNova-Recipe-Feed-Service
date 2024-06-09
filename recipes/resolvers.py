@@ -255,6 +255,7 @@ def resolve_edit_recipe(_, info, input):
 
 @database_sync_to_async
 def resolve_recipe_feed(_, info):
+  #* the recommendation feed cache may never expire because it's always refreshed every 120 seconds, 30 seconds before its expiry time
   """
   FEED ALGORITHM
   =========================================================================
@@ -275,12 +276,12 @@ def resolve_recipe_feed(_, info):
               The latest recipe from each followings is fetched. 
               (There's plan to change from fetching single latest recipe to fetching 2 or 3 latest recipes from each chef)
         d2. Each recipe is added to a "feed" list that will be used to display a feed response to the current user.
-      e. A recommendation's feed cache (its timeout = 300 seconds) that holds the calculated recommendations content
+      e. A recommendation's feed cache (its timeout = 150 seconds) that holds the calculated recommendations content
           from the recommendations service is fetched.
       f. If it doesn't exist, nothing happens. If it exists:
         f1. Recipes ins the recipe microservices are fetched based on the content of the recommendations cache.
         f2. These fetched recommended recipes are then added to the "feed" list to populate the user feed response.
-      g. The recipe feed cache is created with the value of the "feed" list with a timeout of 250 seconds.
+      g. The recipe feed cache is created with the value of the "feed" list with a timeout of 60 seconds.
 
   3. If the recipe feed cache exists, its data is retrieved for feed response
 
@@ -365,7 +366,7 @@ def resolve_recipe_feed(_, info):
         "feed": feed,
         "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
       }
-      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=250 )
+      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=60 )
       print(f"{username} feed cache created")
 
       # if there is a no feed cache, this is returned in response

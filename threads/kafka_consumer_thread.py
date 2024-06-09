@@ -7,5 +7,5 @@ class UpdateChefThread(Thread):
     Thread.__init__(self)
 
   def run(self):
-    print("Thread running in background")
+    print("Kafka consumer thread running in background")
     consume_kafka_messages()

@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 import os
 from django.core.management import call_command
-
+from utils.schedules import execute_schedules
 
 class RecipesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -12,4 +12,5 @@ class RecipesConfig(AppConfig):
         if os.environ.get('RUN_MAIN'):
             print("hello server")
             call_command('kafka_consumer') # calling the custom "kafka_consumer" command
+            call_command('execute_schedules')
             self.function_executed = True

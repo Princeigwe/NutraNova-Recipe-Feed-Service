@@ -87,7 +87,7 @@ def consume_user_recommended_feed(messages):
 
     user_recommendation_feed_cache = cache.get(f"{message_chef_username}_recommendation_feed")
     if not user_recommendation_feed_cache:
-      user_recommendation_feed_cache = cache.set( key=f"{message_chef_username}_recommendation_feed", value=message_recommendations_feed, timeout=300 ) # cache timeout set to 300 seconds
+      user_recommendation_feed_cache = cache.set( key=f"{message_chef_username}_recommendation_feed", value=message_recommendations_feed, timeout=150 ) # cache timeout set to 150 seconds
 
   print(f"{message_chef_username}_recommendations_feed: ", cache.get(f"{message_chef_username}_recommendation_feed"))
 

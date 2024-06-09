@@ -1,7 +1,6 @@
 from django.apps import AppConfig
 import os
 from django.core.management import call_command
-from utils.schedules import execute_schedules
 
 class RecipesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'

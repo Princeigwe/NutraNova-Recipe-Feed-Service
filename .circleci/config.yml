@@ -9,7 +9,7 @@ jobs:
     # executor: python/default
     executor: 
       name: python/default
-      tag: "3.11" # specifying python version to use in python/default executor 
+      tag: "3.11" # specifying python version to use in python/default executor. This fixed the CI installation error on scheduler package
     environment:
       APOLLO_KEY: $APOLLO_KEY
     steps:

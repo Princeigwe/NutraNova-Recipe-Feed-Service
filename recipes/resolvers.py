@@ -19,6 +19,7 @@ from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 from enums.choices import VoteType
 from utils.calculate_new_recommended_feed import calculate_new_recommended_feed
+from utils.multiselect_to_list import multiselect_to_list
 
 #* get_user(info) function in resolver functions are called to facilitate authenticated requests, and get user details
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
@@ -203,12 +204,12 @@ def resolve_edit_recipe(_, info, input):
 
     chef_preferences = {
       "dietary_preference": user["dietary_preference"],
-      "health_goal":        user["health_goal"],
-      "allergens":          user["allergens"],
+      "health_goal":        multiselect_to_list(user["health_goal"]),  # multiselect preference
+      "allergens":          multiselect_to_list(user["allergens"]),    # multiselect preference
       "activity_level":     user["activity_level"],
-      "cuisines":           user["cuisines"],
-      "medical_conditions": user["medical_conditions"],
-      "taste_preferences":  user["taste_preferences"]
+      "cuisines":           multiselect_to_list(user["cuisines"]),     # multiselect preference
+      "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
+      "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
     }
 
     existing_recipe_response = model_to_dict(existing_recipe, exclude=['tags', 'created', 'published', 'chef']) 
@@ -554,12 +555,12 @@ def resolve_up_vote_recipe(_, info, pk):
 
       voter_preferences = {
         "dietary_preference": user["dietary_preference"],
-        "health_goal":        user["health_goal"],
-        "allergens":          user["allergens"],
+        "health_goal":        multiselect_to_list(user["health_goal"]),  # multiselect preference
+        "allergens":          multiselect_to_list(user["allergens"]),    # multiselect preference
         "activity_level":     user["activity_level"],
-        "cuisines":           user["cuisines"],
-        "medical_conditions": user["medical_conditions"],
-        "taste_preferences":  user["taste_preferences"]
+        "cuisines":           multiselect_to_list(user["cuisines"]),     # multiselect preference
+        "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
+        "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
       # send message to kafka
       kafka_message = {
@@ -608,12 +609,12 @@ def resolve_down_vote_recipe(_, info, pk):
 
       voter_preferences = {
         "dietary_preference": user["dietary_preference"],
-        "health_goal":        user["health_goal"],
-        "allergens":          user["allergens"],
+        "health_goal":        multiselect_to_list(user["health_goal"]),  # multiselect preference
+        "allergens":          multiselect_to_list(user["allergens"]),    # multiselect preference
         "activity_level":     user["activity_level"],
-        "cuisines":           user["cuisines"],
-        "medical_conditions": user["medical_conditions"],
-        "taste_preferences":  user["taste_preferences"]
+        "cuisines":           multiselect_to_list(user["cuisines"]),     # multiselect preference
+        "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
+        "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
       # send message to kafka
       kafka_message = {
@@ -779,3 +780,29 @@ def resolve_my_saved_recipes(_, info):
     recipes_response.append(recipe)
 
   return recipes_response
+
+
+def resolve_chef_published_recipes(_, info, username):
+  get_user(info)
+  try:
+    chef = Chef.objects.get(username=username)
+    chef_published_recipes = Recipe.objects.filter(status="PUBLISHED", chef=chef)
+    recipes_response = []
+    for published_recipe in chef_published_recipes:
+      recipe = model_to_dict(published_recipe, exclude=['tags', 'created', 'published', 'chef'])
+      chef_detail = {
+        "username": published_recipe.chef.username,
+        "first_name": published_recipe.chef.first_name,
+        "last_name": published_recipe.chef.last_name
+      }
+      recipe['tags'] = published_recipe.tags.all().values_list('name', flat=True)
+      recipe['chef'] = chef_detail
+      recipe['created'] = published_recipe.created
+      recipe['published'] = published_recipe.published
+
+      recipes_response.append(recipe)
+      
+    return recipes_response
+  except Chef.DoesNotExist:
+    raise Exception("Chef does not exist")
+  

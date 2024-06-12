@@ -160,7 +160,7 @@ type RecipeResponse{
 "Response for a feed of recipes tailored to the preferences of the current user"
 type RecipeFeedResponse{
   message: String
-  feed: [Recipe]
+  feed: [RecipeResponse]
   "suggested chefs to follow if user is not following any chef to populate feed"
   suggestions: [String]
 }

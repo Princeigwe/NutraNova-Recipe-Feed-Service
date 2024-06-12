@@ -322,18 +322,40 @@ def resolve_recipe_feed(_, info):
         chef = Chef.objects.get(username=user['username'])
         try:
           # todo: edit this to fetch 3 or more latest recipes from each chef in in following_cache
-          chef_latest_recipe = model_to_dict(chef.recipes.filter(status='PUBLISHED').latest('published'), exclude=['created', 'published', 'chef', 'tags'])
+          chef_latest_recipe = chef.recipes.filter(status='PUBLISHED').latest('published')
+          chef_latest_recipe_dict = model_to_dict(chef_latest_recipe, exclude=['created', 'published', 'chef', 'tags'])
           chef_detail = {
             "username": chef.username,
             "first_name": chef.first_name,
             "last_name": chef.last_name,
             "is_verified": chef.is_verified
           }
-          chef_latest_recipe['chef'] = chef_detail
-          chef_latest_recipe['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
-          chef_latest_recipe['created'] = chef.recipes.latest('published').created
-          chef_latest_recipe['published'] = chef.recipes.latest('published').published
-          feed.append(chef_latest_recipe)
+          chef_latest_recipe_dict['chef'] = chef_detail
+          chef_latest_recipe_dict['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
+          chef_latest_recipe_dict['created'] = chef.recipes.latest('published').created
+          chef_latest_recipe_dict['published'] = chef.recipes.latest('published').published
+
+          number_of_up_votes = chef_latest_recipe.upVotes.count()
+          recipe_up_votes = chef_latest_recipe.upVotes.all()
+          up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
+          # making this unique for voters with vote_strength > 1.
+          unique_up_voters = list(set(up_voters))
+
+          number_of_down_votes = chef_latest_recipe.downVotes.count()
+          recipe_down_votes = chef_latest_recipe.downVotes.all()
+          down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
+          unique_down_voters = list(set(down_voters))
+
+          recipe_response = {
+            "recipe": chef_latest_recipe_dict,
+            "up_votes": number_of_up_votes,
+            "up_voters": unique_up_voters,
+            "down_votes": number_of_down_votes,
+            "down_voters": unique_down_voters
+          }
+
+          # feed.append(chef_latest_recipe)
+          feed.append(recipe_response)
         except Recipe.DoesNotExist:
           pass
         
@@ -353,12 +375,21 @@ def resolve_recipe_feed(_, info):
             "last_name": chef.last_name,
             "is_verified": chef.is_verified
           }
-          recipe_response = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef']) # change recipe instance to dictionary
-          recipe_response['chef'] = chef_details
+          recommended_recipe = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef']) # change recipe instance to dictionary
+          recommended_recipe['chef'] = chef_details
           # selecting only the name attributes of each recipe Tag object
-          recipe_response['tags'] = recipe.tags.all().values_list('name', flat=True)
-          recipe_response['created'] = recipe.created
-          recipe_response['published'] = recipe.published
+          recommended_recipe['tags'] = recipe.tags.all().values_list('name', flat=True)
+          recommended_recipe['created'] = recipe.created
+          recommended_recipe['published'] = recipe.published
+
+          recipe_response = {
+            "recipe": recommended_recipe,
+            "up_votes": number_of_up_votes,
+            "up_voters": unique_up_voters,
+            "down_votes": number_of_down_votes,
+            "down_voters": unique_down_voters
+          }
+
           feed.append(recipe_response)
 
       # setting cache for next response in request when there is a cache-miss
@@ -377,11 +408,6 @@ def resolve_recipe_feed(_, info):
         "feed": feed_cache['feed'],
         "suggestions": feed_cache['suggestions']
       }
-      # return{
-      #   "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
-      #   "feed": feed,
-      #   "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
-      # }
   
   feed_cache = cache.get(f"{username}recipe_feed")
   print(f"data from existing {username} feed cache")

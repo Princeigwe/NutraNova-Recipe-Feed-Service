@@ -74,7 +74,7 @@ input CreateRecipeInput{
   preparation_time: TimeInput!
   cooking_time: TimeInput!
   servings: Int!
-  images: [String]!
+  images: [String!]!
   tags: [String!]!
   video: String
   thumbnail: String
@@ -142,11 +142,6 @@ type Recipe{
 }
 
 
-type Like{
-  liker: Chef
-  recipe: Recipe
-}
-
 "Response for single recipe mutation and query operation"
 type RecipeResponse{
   message: String
@@ -165,7 +160,7 @@ type RecipeResponse{
 "Response for a feed of recipes tailored to the preferences of the current user"
 type RecipeFeedResponse{
   message: String
-  feed: [Recipe]
+  feed: [RecipeResponse]
   "suggested chefs to follow if user is not following any chef to populate feed"
   suggestions: [String]
 }
@@ -220,14 +215,15 @@ type Query{
   "fetch child comments to a parent comment"
   commentReplies(pk: Int): RecipeCommentsResponse
   mySavedRecipes: [Recipe]
+
+  "fetch published recipes by a chef's username"
+  chefPublishedRecipes(username: String): [Recipe]
 }
 
 "The mutation resolvers"
 type Mutation{
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse
-  likeRecipe(pk: Int): String
-  unLikeRecipe(pk: Int): String
   deleteRecipe(pk: Int): String
   commentOnRecipe(input: RecipeCommentInput): RecipeCommentResponse
   upVoteRecipe(pk: Int): String

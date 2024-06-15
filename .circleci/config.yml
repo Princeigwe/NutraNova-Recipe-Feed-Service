@@ -6,7 +6,10 @@ orbs:
 jobs:
   
   install-python-dependencies-and-test-application:
-    executor: python/default
+    # executor: python/default
+    executor: 
+      name: python/default
+      tag: "3.11" # specifying python version to use in python/default executor. This fixed the CI installation error on scheduler package
     environment:
       APOLLO_KEY: $APOLLO_KEY
     steps:
@@ -20,7 +23,7 @@ jobs:
   
   build-and-deploy-docker-image:
     docker:
-      - image: cimg/python:3.12.1
+      - image: cimg/python:3.11
         auth:
           username: $DOCKER_USERNAME
           password: $DOCKER_PASSWORD
@@ -51,6 +54,9 @@ jobs:
             echo 'export PATH=$HOME/.rover/bin:$PATH' >> $BASH_ENV 
       - checkout
       - run:
+          name: Rover Auth
+          command: rover config whoami
+      - run:
           name: Rover Help
           command: |
             rover subgraph check --help
@@ -60,10 +66,10 @@ jobs:
           steps:
             - run:
                 name: Create SuperGraph Variant
-                command: rover subgraph publish nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+                command: rover subgraph publish NutraNova@staging -s ./schemas/recipe.schema.graphql --name nutranova-recipe --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
             - run:
                 name: Publish Schema
-                command: rover subgraph publish nutranova-super-graph@staging --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+                command: rover subgraph publish NutraNova@staging --schema ./schemas/recipe.schema.graphql --name nutranova-recipe --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
             # - run:
             #     name: Schema Check
             #     command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug
@@ -74,10 +80,10 @@ jobs:
           steps:
             - run:
                 name: Create SuperGraph Variant
-                command: rover subgraph publish nutranova-super-graph@prod -s ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+                command: rover subgraph publish NutraNova@prod -s ./schemas/recipe.schema.graphql --name nutranova-recipe --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
             - run:
                 name: Publish Schema
-                command: rover subgraph publish nutranova-super-graph@prod --schema ./schemas/recipe.schema.graphql --name nutra-nova-recipe-service --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
+                command: rover subgraph publish NutraNova@prod --schema ./schemas/recipe.schema.graphql --name nutranova-recipe --routing-url https://nutranova-recipe.onrender.com/graphql/ --log debug
             # - run:
             #     name: Schema Check
             #     command: rover graph check nutranova-super-graph@staging -s ./schemas/recipe.schema.graphql --log debug

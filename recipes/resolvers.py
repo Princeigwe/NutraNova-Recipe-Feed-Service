@@ -1,4 +1,4 @@
-from .models import Recipe, Tag, Chef, Like, Comment, SavedRecipe, UpVote, DownVote
+from .models import Recipe, Tag, Chef, Comment, SavedRecipe, UpVote, DownVote
 from utils.get_user import get_user
 import datetime
 from django.forms.models import model_to_dict
@@ -12,14 +12,14 @@ import asyncio
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
-from threads.like_recipe_thread import LikeRecipeThread
 from threads.kafka_graph_chef_vote_recipe_thread import GraphChefVoteRecipeThread
-from threads.kafka_graph_chef_un_like_recipe_thread import GraphChefUnLikeRecipeThread
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 from enums.choices import VoteType
+from utils.calculate_new_recommended_feed import calculate_new_recommended_feed
+from utils.multiselect_to_list import multiselect_to_list
 
 #* get_user(info) function in resolver functions are called to facilitate authenticated requests, and get user details
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
@@ -204,12 +204,12 @@ def resolve_edit_recipe(_, info, input):
 
     chef_preferences = {
       "dietary_preference": user["dietary_preference"],
-      "health_goal":        user["health_goal"],
-      "allergens":          user["allergens"],
+      "health_goal":        multiselect_to_list(user["health_goal"]),  # multiselect preference
+      "allergens":          multiselect_to_list(user["allergens"]),    # multiselect preference
       "activity_level":     user["activity_level"],
-      "cuisines":           user["cuisines"],
-      "medical_conditions": user["medical_conditions"],
-      "taste_preferences":  user["taste_preferences"]
+      "cuisines":           multiselect_to_list(user["cuisines"]),     # multiselect preference
+      "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
+      "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
     }
 
     existing_recipe_response = model_to_dict(existing_recipe, exclude=['tags', 'created', 'published', 'chef']) 
@@ -252,26 +252,39 @@ def resolve_edit_recipe(_, info, input):
     raise Exception(e)
 
 
-# RECIPE FEED THOUGHT PROCESS:
-# make an API request to the user service, in order to get the list of usernames of followings
-# cache the result for 30 minutes
-# select a random list of usernames from the result, and for each username, fetch the latest recipe created by the chef
-# append each data to a response list and return it.
-# cache the response for 15 minutes
-# repeat from 1 and 2 when user makes another recipe feed request
+
 
 @database_sync_to_async
 def resolve_recipe_feed(_, info):
+  #* the recommendation feed cache may never expire because it's always refreshed every 120 seconds, 30 seconds before its expiry time
   """
-  The function `resolve_recipe_feed` retrieves and populates a user's recipe feed with the latest
-  recipes from followed chefs and recommendations.
+  FEED ALGORITHM
+  =========================================================================
+  1. A recipe feed cache for the current user is fetched
 
-  The code is a function called `resolve_recipe_feed` that resolves a recipe
-  feed for a user. It first checks if there is an existing cache for the user's recipe feed. If the
-  cache does not exist, it fetches the user's followings, retrieves their latest published recipes.
+  2. If it doesn't exist:
+      a. The cache for the followings of the user is fetched
+      b. The user's following cache doesn't exist:
+        b1. The followings of the current user is fetched from the users-microservice, 
+            and the followings cache is created with a timeout of 600seconds
+      c. The followings list of current user is retrieved from the followings cache
+      d. If there are zero followings:
+        d1. A request is sent to the recommendations microservice to recommend chefs to follow, 
+            based on the dieting preferences of the current user. The user can now follow with the 
+            "followUser" GraphQL resolver.
 
-  It populates the feed by fetching user followings and their latest recipes. It also includes
-  recommendations from a recommendation service.
+            else, if there are one or more followings:
+              The latest recipe from each followings is fetched. 
+              (There's plan to change from fetching single latest recipe to fetching 2 or 3 latest recipes from each chef)
+        d2. Each recipe is added to a "feed" list that will be used to display a feed response to the current user.
+      e. A recommendation's feed cache (its timeout = 150 seconds) that holds the calculated recommendations content
+          from the recommendations service is fetched.
+      f. If it doesn't exist, nothing happens. If it exists:
+        f1. Recipes ins the recipe microservices are fetched based on the content of the recommendations cache.
+        f2. These fetched recommended recipes are then added to the "feed" list to populate the user feed response.
+      g. The recipe feed cache is created with the value of the "feed" list with a timeout of 60 seconds.
+
+  3. If the recipe feed cache exists, its data is retrieved for feed response
 
   """
   
@@ -308,16 +321,41 @@ def resolve_recipe_feed(_, info):
       for user in user_followings_cache:
         chef = Chef.objects.get(username=user['username'])
         try:
-          chef_latest_recipe = model_to_dict(chef.recipes.filter(status='PUBLISHED').latest('published'), exclude=['created', 'published', 'chef'])
+          # todo: edit this to fetch 3 or more latest recipes from each chef in in following_cache
+          chef_latest_recipe = chef.recipes.filter(status='PUBLISHED').latest('published')
+          chef_latest_recipe_dict = model_to_dict(chef_latest_recipe, exclude=['created', 'published', 'chef', 'tags'])
           chef_detail = {
             "username": chef.username,
             "first_name": chef.first_name,
-            "last_name": chef.last_name
+            "last_name": chef.last_name,
+            "is_verified": chef.is_verified
           }
-          chef_latest_recipe['chef'] = chef_detail
-          chef_latest_recipe['created'] = chef.recipes.latest('published').created
-          chef_latest_recipe['published'] = chef.recipes.latest('published').published
-          feed.append(chef_latest_recipe)
+          chef_latest_recipe_dict['chef'] = chef_detail
+          chef_latest_recipe_dict['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
+          chef_latest_recipe_dict['created'] = chef.recipes.latest('published').created
+          chef_latest_recipe_dict['published'] = chef.recipes.latest('published').published
+
+          number_of_up_votes = chef_latest_recipe.upVotes.count()
+          recipe_up_votes = chef_latest_recipe.upVotes.all()
+          up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
+          # making this unique for voters with vote_strength > 1.
+          unique_up_voters = list(set(up_voters))
+
+          number_of_down_votes = chef_latest_recipe.downVotes.count()
+          recipe_down_votes = chef_latest_recipe.downVotes.all()
+          down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
+          unique_down_voters = list(set(down_voters))
+
+          recipe_response = {
+            "recipe": chef_latest_recipe_dict,
+            "up_votes": number_of_up_votes,
+            "up_voters": unique_up_voters,
+            "down_votes": number_of_down_votes,
+            "down_voters": unique_down_voters
+          }
+
+          # feed.append(chef_latest_recipe)
+          feed.append(recipe_response)
         except Recipe.DoesNotExist:
           pass
         
@@ -334,10 +372,24 @@ def resolve_recipe_feed(_, info):
           chef_details = {
             "username": chef.username,
             "first_name": chef.first_name,
-            "last_name": chef.last_name
+            "last_name": chef.last_name,
+            "is_verified": chef.is_verified
           }
-          recipe_response = recipe.__dict__ # change recipe instance to dictionary
-          recipe_response['chef'] = chef_details
+          recommended_recipe = model_to_dict(recipe, exclude=['tags', 'created', 'published', 'chef']) # change recipe instance to dictionary
+          recommended_recipe['chef'] = chef_details
+          # selecting only the name attributes of each recipe Tag object
+          recommended_recipe['tags'] = recipe.tags.all().values_list('name', flat=True)
+          recommended_recipe['created'] = recipe.created
+          recommended_recipe['published'] = recipe.published
+
+          recipe_response = {
+            "recipe": recommended_recipe,
+            "up_votes": number_of_up_votes,
+            "up_voters": unique_up_voters,
+            "down_votes": number_of_down_votes,
+            "down_voters": unique_down_voters
+          }
+
           feed.append(recipe_response)
 
       # setting cache for next response in request when there is a cache-miss
@@ -346,7 +398,7 @@ def resolve_recipe_feed(_, info):
         "feed": feed,
         "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
       }
-      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=250 )
+      cache.set( key=f"{username}recipe_feed", value= cache_data, timeout=60 )
       print(f"{username} feed cache created")
 
       # if there is a no feed cache, this is returned in response
@@ -356,11 +408,6 @@ def resolve_recipe_feed(_, info):
         "feed": feed_cache['feed'],
         "suggestions": feed_cache['suggestions']
       }
-      # return{
-      #   "message": "Recipe feed" if len(feed) > 0 else "Feed empty at the moment, follow more chefs",
-      #   "feed": feed,
-      #   "suggestions": None if len(feed) > 0 else follow_chefs_recommendations_for_current_user(info) 
-      # }
   
   feed_cache = cache.get(f"{username}recipe_feed")
   print(f"data from existing {username} feed cache")
@@ -467,7 +514,6 @@ async def single_recipe_sub_generator(_, info, pk):
     try:
       recipe = await database_sync_to_async(Recipe.objects.get)(id=pk, status="PUBLISHED")
       chef = await database_sync_to_async(lambda: recipe.chef)()
-      likes =  await database_sync_to_async(recipe.likes.count)()
 
       number_of_up_votes = await database_sync_to_async(recipe.upVotes.count)()
       recipe_up_votes = await database_sync_to_async(recipe.upVotes.all)()
@@ -497,7 +543,6 @@ async def single_recipe_sub_generator(_, info, pk):
       recipe_response['chef'] = chef_details
       response = {
         "recipe": recipe_response,
-        "likes": likes,
         "up_votes": number_of_up_votes,
         "up_voters": unique_up_voters,
         "down_votes": number_of_down_votes,
@@ -512,69 +557,18 @@ def resolve_single_recipe_sub(response, obj, pk):
   return response
 
 
-@database_sync_to_async
-def resolve_like_recipe(_, info, pk):
-  user = get_user(info)
-  request = info.context['request']
-
-  # like_click_count to set interval for processing recommendations by the recommendations service
-  like_click_count = request.session.get(f"{user['username']}_like_click_count")
-  if not like_click_count:
-    request.session[f"{user['username']}_like_click_count"] = 0
-
-  try:
-    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-
-    # like recipe in background thread
-    like_recipe_thread = LikeRecipeThread(user, recipe)
-    like_recipe_thread.start()
-
-    like_click_count = request.session.get(f"{user['username']}_like_click_count")
-    like_click_count += 1
-    request.session[f"{user['username']}_like_click_count"] = like_click_count 
-
-    if like_click_count == 5:
-      #* send kafka message to recommendation service to process recommended feed data
-      kafka_recommendation_message = user['username']
-      request_recommended_feed_thread = RequestRecommendedFeedThread(kafka_recommendation_message)
-      request_recommended_feed_thread.start()
-
-      # set session like click count to zero
-      request.session[f"{user['username']}_like_click_count"] = 0
-
-    liker_preferences = {
-      "dietary_preference": user["dietary_preference"],
-      "health_goal":        user["health_goal"],
-      "allergens":          user["allergens"],
-      "activity_level":     user["activity_level"],
-      "cuisines":           user["cuisines"],
-      "medical_conditions": user["medical_conditions"],
-      "taste_preferences":  user["taste_preferences"]
-    }
-    # send message to kafka
-    kafka_message = {
-      "liker_username": user['username'],
-      "liker_first_name": user['first_name'],
-      "liker_last_name": user['last_name'],
-      "liker_preferences": liker_preferences,
-      "recipe_title": recipe.title,
-      "recipe_published": str(recipe.published),
-    }
-
-    # sending kafka message in background thread to create chef-to-recipe :LIKE relationship in recommendations microservice
-    # graph_chef_like_recipe_thread = GraphChefLikeRecipeThread(kafka_message)
-    # graph_chef_like_recipe_thread.start()
-    return f"You liked the recipe by {recipe.chef.username}"
-  
-  except Recipe.DoesNotExist as error:
-    raise Exception(error)
-
 
 def resolve_up_vote_recipe(_, info, pk):
   user = get_user(info)
+  request = info.context['request']
+
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-    voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    # getting or creating new chef objects
+    # the object creation is implemented because the current user may be a new user who
+    # starts voting recipes without creating or publishing recipes
+    # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -583,14 +577,16 @@ def resolve_up_vote_recipe(_, info, pk):
         up_vote_objects.append( UpVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
       UpVote.objects.bulk_create(up_vote_objects) # saving the objects
 
+      calculate_new_recommended_feed(request, user)
+
       voter_preferences = {
         "dietary_preference": user["dietary_preference"],
-        "health_goal":        user["health_goal"],
-        "allergens":          user["allergens"],
+        "health_goal":        multiselect_to_list(user["health_goal"]),  # multiselect preference
+        "allergens":          multiselect_to_list(user["allergens"]),    # multiselect preference
         "activity_level":     user["activity_level"],
-        "cuisines":           user["cuisines"],
-        "medical_conditions": user["medical_conditions"],
-        "taste_preferences":  user["taste_preferences"]
+        "cuisines":           multiselect_to_list(user["cuisines"]),     # multiselect preference
+        "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
+        "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
       # send message to kafka
       kafka_message = {
@@ -604,8 +600,8 @@ def resolve_up_vote_recipe(_, info, pk):
       }
 
       # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_like_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_like_recipe_thread.start()
+      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
+      graph_chef_vote_recipe_thread.start()
       
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
@@ -616,43 +612,17 @@ def resolve_up_vote_recipe(_, info, pk):
     raise Exception("Chef does not exist")
 
 
-
-@database_sync_to_async
-def resolve_unlike_recipe(_, info, pk):
-  user = get_user(info)
-  try:
-    recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-    chef = Chef.objects.get(username=user['username'])
-    like = Like.objects.get(recipe=recipe, liker=chef)
-    like.delete()
-
-    # send message to kafka
-    kafka_message = {
-      "liker_username": user['username'],
-      "liker_first_name": user['first_name'],
-      "liker_last_name": user['last_name'],
-      "recipe_title": recipe.title,
-      "recipe_published": str(recipe.published),
-    }
-
-    # sending kafka message in background thread
-    graph_chef_un_like_recipe_thread = GraphChefUnLikeRecipeThread(kafka_message)
-    graph_chef_un_like_recipe_thread.start()
-    return f"You un-liked recipe by {recipe.chef.username}"
-  
-  except Recipe.DoesNotExist as error:
-    raise Exception(error)
-  except Chef.DoesNotExist:
-    pass
-  except Like.DoesNotExist:
-    return f"You un-liked recipe by {recipe.chef.username}"
-
-
 def resolve_down_vote_recipe(_, info, pk):
   user = get_user(info)
+  request = info.context['request']
+
   try:
     recipe = Recipe.objects.get(id=pk, status='PUBLISHED')
-    voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    # getting or creating new chef objects
+    # the object creation is implemented because the current user may be a new user who
+    # starts voting recipes without creating or publishing recipes
+    # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -661,14 +631,16 @@ def resolve_down_vote_recipe(_, info, pk):
         down_vote_objects.append( DownVote(voter=voter, recipe=recipe) ) # creating new Upvote objects here
       DownVote.objects.bulk_create(down_vote_objects) # saving the objects
 
+      calculate_new_recommended_feed(request, user)
+
       voter_preferences = {
         "dietary_preference": user["dietary_preference"],
-        "health_goal":        user["health_goal"],
-        "allergens":          user["allergens"],
+        "health_goal":        multiselect_to_list(user["health_goal"]),  # multiselect preference
+        "allergens":          multiselect_to_list(user["allergens"]),    # multiselect preference
         "activity_level":     user["activity_level"],
-        "cuisines":           user["cuisines"],
-        "medical_conditions": user["medical_conditions"],
-        "taste_preferences":  user["taste_preferences"]
+        "cuisines":           multiselect_to_list(user["cuisines"]),     # multiselect preference
+        "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
+        "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
       # send message to kafka
       kafka_message = {
@@ -682,8 +654,8 @@ def resolve_down_vote_recipe(_, info, pk):
       }
 
       # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_like_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_like_recipe_thread.start()
+      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
+      graph_chef_vote_recipe_thread.start()
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already")
@@ -834,3 +806,29 @@ def resolve_my_saved_recipes(_, info):
     recipes_response.append(recipe)
 
   return recipes_response
+
+
+def resolve_chef_published_recipes(_, info, username):
+  get_user(info)
+  try:
+    chef = Chef.objects.get(username=username)
+    chef_published_recipes = Recipe.objects.filter(status="PUBLISHED", chef=chef)
+    recipes_response = []
+    for published_recipe in chef_published_recipes:
+      recipe = model_to_dict(published_recipe, exclude=['tags', 'created', 'published', 'chef'])
+      chef_detail = {
+        "username": published_recipe.chef.username,
+        "first_name": published_recipe.chef.first_name,
+        "last_name": published_recipe.chef.last_name
+      }
+      recipe['tags'] = published_recipe.tags.all().values_list('name', flat=True)
+      recipe['chef'] = chef_detail
+      recipe['created'] = published_recipe.created
+      recipe['published'] = published_recipe.published
+
+      recipes_response.append(recipe)
+      
+    return recipes_response
+  except Chef.DoesNotExist:
+    raise Exception("Chef does not exist")
+  

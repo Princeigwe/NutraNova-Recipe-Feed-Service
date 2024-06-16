@@ -16,6 +16,7 @@ class Tag(models.Model):
 
 
 class Chef(models.Model):
+  image         = models.URLField(max_length=500, default="https://www.gravatar.com/avatar")
   username      = models.CharField(max_length=100, db_index=True)
   first_name    = models.CharField(max_length=20, default='')
   last_name     = models.CharField(max_length=20, default='')

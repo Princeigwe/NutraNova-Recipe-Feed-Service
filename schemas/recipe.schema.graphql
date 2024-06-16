@@ -99,6 +99,7 @@ input EditRecipeInput{
 
 "Chef schema on response"
 type Chef{
+  image: String
   username: String
   first_name: String
   last_name: String

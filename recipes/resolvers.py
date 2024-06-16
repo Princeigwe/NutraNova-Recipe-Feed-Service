@@ -56,7 +56,7 @@ def resolve_create_recipe(_, info, input: dict):
 
   try:
 
-    chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    chef, created = Chef.objects.get_or_create(image= user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
     title = input['title']
     description = input['description']
     ingredients = input['ingredients']
@@ -591,7 +591,7 @@ def resolve_up_vote_recipe(_, info, pk):
     # the object creation is implemented because the current user may be a new user who
     # starts voting recipes without creating or publishing recipes
     # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
-    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -645,7 +645,7 @@ def resolve_down_vote_recipe(_, info, pk):
     # the object creation is implemented because the current user may be a new user who
     # starts voting recipes without creating or publishing recipes
     # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
-    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):

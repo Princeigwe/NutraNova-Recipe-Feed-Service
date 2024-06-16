@@ -25,6 +25,12 @@ def upload_recipe_image_to_cloudinary(request):
   recipe_images = []
   if request.FILES:
     # request.data.getlist(<key_name>) retrieve a list of values for a given key from the request data
+    # limiting number of images for upload to 2
+    if len(request.data.getlist('images')) > 2:
+      return Response(
+        {"message": "Maximum of 2 images required."},
+        status=status.HTTP_400_BAD_REQUEST
+      )
     for image in request.data.getlist('images'):
       if any(char.isspace() for char in image.name):
         image.name = image.name.replace(' ', '_')
@@ -43,6 +49,13 @@ def upload_recipe_image_to_cloudinary(request):
         recipe_images.append(uploaded_image_url)
       
       elif image_path.endswith(".jpg"):
+        #compress image and upload the compressed image
+        compressed_image = compress_image(image_path)
+        upload = upload_and_get_image_details(compressed_image)
+        uploaded_image_url = upload['secure_url']
+        recipe_images.append(uploaded_image_url)
+      
+      elif image_path.endswith(".jpeg"):
         #compress image and upload the compressed image
         compressed_image = compress_image(image_path)
         upload = upload_and_get_image_details(compressed_image)

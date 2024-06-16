@@ -99,8 +99,12 @@ def resolve_create_recipe(_, info, input: dict):
       raise Exception("Video must be provided with thumbnail")
 
     servings = input['servings']
-    images = input['images']
 
+    # ensuring the image files is a maximum of 2
+    if len( input['images'] ) > 2:
+      raise Exception("Maximum of 2 images required.")
+
+    images = input['images']
     recipe = Recipe.objects.create(
       title=title,
       description=description,

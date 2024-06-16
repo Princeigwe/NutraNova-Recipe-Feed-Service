@@ -246,25 +246,29 @@ def resolve_edit_recipe(_, info, input):
     # send message to kafka if recipe status is 'PUBLISHED'
     if existing_recipe_response['status'] == 'PUBLISHED':
       kafka_message = {
-      "chef_username": chef_details['username'],
-      "chef_first_name": chef_details['first_name'],
-      "chef_last_name": chef_details['last_name'],
-      "chef_preferences": chef_preferences,
-      "recipe_title": existing_recipe_response['title'],
-      "recipe_description": existing_recipe_response['description'],
-      "recipe_ingredients": existing_recipe_response['ingredients'],
-      "recipe_instructions": existing_recipe_response['instructions'],
-      "recipe_preparation_time": str(existing_recipe_response['preparation_time']),
-      "recipe_cooking_time": str(existing_recipe_response['cooking_time']),
-      "recipe_servings": existing_recipe_response['servings'],
-      "recipe_nutritional_value": existing_recipe_response['nutritional_value'],
-      "recipe_published": str(existing_recipe_response['published']),
-      "tags": existing_recipe_response['tags']
-    }
+        "chef_username": chef_details['username'],
+        "chef_first_name": chef_details['first_name'],
+        "chef_last_name": chef_details['last_name'],
+        "chef_preferences": chef_preferences,
+        "recipe_title": existing_recipe_response['title'],
+        "recipe_description": existing_recipe_response['description'],
+        "recipe_ingredients": existing_recipe_response['ingredients'],
+        "recipe_instructions": existing_recipe_response['instructions'],
+        "recipe_preparation_time": str(existing_recipe_response['preparation_time']),
+        "recipe_cooking_time": str(existing_recipe_response['cooking_time']),
+        "recipe_servings": existing_recipe_response['servings'],
+        "recipe_nutritional_value": existing_recipe_response['nutritional_value'],
+        "recipe_published": str(existing_recipe_response['published']),
+        "tags": existing_recipe_response['tags']
+      }
       send_graph_nodes_details(kafka_message)
-
-    return {
-      "message": "Recipe published",
+      return {
+        "message": "Recipe published",
+        "recipe": existing_recipe_response
+      }
+    
+    return{
+      "message": "Recipe updated",
       "recipe": existing_recipe_response
     }
   except Recipe.DoesNotExist as e:

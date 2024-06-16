@@ -167,6 +167,12 @@ def resolve_edit_recipe(_, info, input):
   user = get_user(info)
   request = info.context['request']
   try:
+    if 'tags' in input and len(input['tags']) > 5:
+      raise Exception("Recipe tags is limited to a number of 5")
+    
+    if 'images' in input and len( input['images'] ) > 2:
+      raise Exception("Maximum of 2 images required.")
+    
     current_chef = Chef.objects.get(username=user['username'])
     recipe_id = input['id']
     existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
@@ -181,6 +187,8 @@ def resolve_edit_recipe(_, info, input):
       raise Exception("Video must be provided with thumbnail")
 
     for key,value in input.items():
+      if key == 'tags': # skipping the tags key from input to be manually set later, because it throws the error: "Direct assignment to the forward side of a many-to-many set is prohibited. Use tags.set() instead."
+        continue
       if value is not None:
         if(len(value) != 0):
           setattr(existing_recipe, key, value)
@@ -192,6 +200,14 @@ def resolve_edit_recipe(_, info, input):
       existing_recipe.thumbnail = recipe_video_session['thumbnail']
       # if session is present and used, delete session data
       del request.session[f"{user['email']}_recipe_video_detail"]
+    
+    # if there is tags key in the query
+    if 'tags' in input:
+      edited_tags = []
+      for tag_name in input['tags']:
+        tag = get_tag(tag_name)
+        edited_tags.append(tag)
+      existing_recipe.tags.set(edited_tags)
 
     existing_recipe.save()
     tags = existing_recipe.tags.all() # fetch all tags associated to the recipe
@@ -245,8 +261,7 @@ def resolve_edit_recipe(_, info, input):
       "recipe_published": str(existing_recipe_response['published']),
       "tags": existing_recipe_response['tags']
     }
-
-    send_graph_nodes_details(kafka_message)
+      send_graph_nodes_details(kafka_message)
 
     return {
       "message": "Recipe published",

@@ -67,10 +67,11 @@ def consume_and_update_chef_data(messages):
       # this is a response operation for the 'updateProfile' resolver in the user microservice
       else:
         chef = Chef.objects.get(username=message.value['username'])
-        chef.first_name = message.value['first_name']
-        chef.last_name = message.value['last_name']
-        chef.vote_strength = message.value['vote_strength']
-        chef.is_verified = message.value['is_verified']
+        chef.image = message.value['image'] if 'image' in message.value else chef.image
+        chef.first_name = message.value['first_name'] if 'first_name' in message.value else chef.first_name
+        chef.last_name = message.value['last_name'] if 'last_name' in message.value else chef.last_name
+        chef.vote_strength = message.value['vote_strength'] if 'vote_strength' in message.value else chef.vote_strength
+        chef.is_verified = message.value['is_verified'] if 'is_verified' in message.value else chef.vote_strength
         chef.save()
         print(f"{chef.username} data updated")
     except Chef.DoesNotExist:

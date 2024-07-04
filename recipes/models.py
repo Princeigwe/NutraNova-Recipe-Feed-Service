@@ -40,12 +40,12 @@ class Recipe(models.Model):
   preparation_time  = models.TimeField()
   cooking_time      = models.TimeField()
   servings          = models.IntegerField()
-  images            = ArrayField( models.URLField(max_length=500, blank=True, null=True), size=4 )
+  images            = ArrayField( models.URLField(max_length=500, blank=True, null=True), size=2 )
   video             = models.URLField(max_length=500, default="", blank=True, null= True)
   thumbnail         = models.URLField(max_length=500, default="", blank=True, null= True)
   tags              = models.ManyToManyField(Tag)
   nutritional_value = models.JSONField(default=dict)
-  chef              = models.ForeignKey(Chef, on_delete=models.DO_NOTHING, related_name='recipes', db_index=True)
+  chef              = models.ForeignKey(Chef, on_delete=models.CASCADE, related_name='recipes', db_index=True)
   status            = models.CharField(max_length=10, choices=choices.RECIPE_STATUS_CHOICES, default="DRAFT", db_index=True)
   created           = models.DateTimeField(auto_now_add=True)
   published         = models.DateTimeField(auto_now=True)
@@ -93,4 +93,3 @@ class SavedRecipe(models.Model):
 
   def __str__(self) -> str:
     return self.chef.username
-

@@ -6,25 +6,33 @@ from rest_framework.parsers import MultiPartParser
 from django.core.files.storage import FileSystemStorage
 from utils.get_user import get_user_rest
 import datetime
+import os
 
 
 stories = database.recipe_stories
 
 # Create your views here.
 
-# @api_view(['POST'])
-# @jwt_authorization # calling the api_view decorator before the custom decorator is also a step in fixing rendering issue
-# @parser_classes([MultiPartParser])
-def upload_story(request):
-  """this function is imported in the file module, which is primarily responsible for uploading media files"""
+
+def upload_story(request, image_path):
+  """
+  this function is imported in the file module, which is primarily responsible for uploading media files.
+  image path is gotten from the file module, and the image content is read as a binary file. This content is then
+  saved in MongoDB, and the file is deleted from the code filesystem.
+  """
   user = get_user_rest(request)
+  file = open(image_path, "rb")
+  file_content = file.read()
   username = user['username']
   story = {
     "username": username,
-    "image": "binary_data_here",
+    "image": file_content,
     "date": datetime.datetime.now(tz=datetime.timezone.utc)
   }
   story = stories.insert_one(story)
+  # delete image file from media directory after upload
+  print("story path: ", image_path)
+  os.remove(image_path)
   print(story)
   
 

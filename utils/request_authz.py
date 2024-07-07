@@ -20,7 +20,7 @@ def jwt_authorization(func):
     except Exception as error:
       print(error)
       return Response(
-        {"message": "invalid jwt"},
+        {"message": f"{error}"},
         status=status.HTTP_401_UNAUTHORIZED
       )
     

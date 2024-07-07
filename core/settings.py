@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     #local apps
     "recipes.apps.RecipesConfig",
     "file.apps.FileConfig",
+    "stories.apps.StoriesConfig",
 
 
     # 3rd party apps

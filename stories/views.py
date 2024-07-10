@@ -1,16 +1,13 @@
 from django.shortcuts import render
 from .mongo_database import database
 from utils.request_authz import jwt_authorization
-from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import MultiPartParser
-from django.core.files.storage import FileSystemStorage
+from rest_framework.decorators import api_view
 from utils.get_user import get_user_rest
 import datetime
 import os
 
 
 stories = database.recipe_stories
-
 # Create your views here.
 
 
@@ -31,7 +28,6 @@ def upload_story(request, image_path):
   }
   story = stories.insert_one(story)
   # delete image file from media directory after upload
-  print("story path: ", image_path)
   os.remove(image_path)
   print(story)
   

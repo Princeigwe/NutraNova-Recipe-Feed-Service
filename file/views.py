@@ -13,6 +13,7 @@ from threads.upload_video_thread import UploadVideoThread
 from utils.get_user import get_user_rest
 from rest_framework import status
 import os
+from stories.views import upload_story
 
 
 # Create your views here.
@@ -129,5 +130,29 @@ def upload_recipe_video_to_cloudinary(request):
         "message": "video uploaded", 
         "video": upload_video_thread.video,
         "thumbnail": upload_video_thread.thumbnail,
+      }
+    )
+
+
+@api_view(['POST'])
+@jwt_authorization # calling the api_view decorator before the custom decorator is also a step in fixing rendering issue
+@parser_classes([MultiPartParser])
+def story_upload(request):
+  image = request.FILES['image'] if 'image' in request.FILES else None
+  if image:
+    if any( char.isspace() for char in image.name): # checking for gaps in the file name
+      image.name = image.name.replace(' ', '_')
+  
+    # default_storage = settings.MEDIA_ROOT
+    # fs = FileSystemStorage(location=default_storage)
+    fs = FileSystemStorage()
+    file = fs.save(image.name, image)
+    file_url = fs.url(file)
+
+    image_path = f"{settings.BASE_DIR}{file_url}"
+    upload_story(request, image_path)
+    return Response( 
+      {
+        "message": "Story uploaded"
       }
     )

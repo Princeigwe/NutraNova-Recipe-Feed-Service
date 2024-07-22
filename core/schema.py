@@ -1,5 +1,6 @@
 from ariadne import QueryType, load_schema_from_path, make_executable_schema, MutationType, SubscriptionType
 from recipes import resolvers
+from stories import resolvers as stories_resolvers
 
 type_defs = load_schema_from_path('schemas')
 
@@ -15,6 +16,7 @@ query.set_field("recipeComments", resolvers.resolve_recipe_comments)
 query.set_field("mySavedRecipes", resolvers.resolve_my_saved_recipes)
 query.set_field("commentReplies", resolvers.resolve_comment_replies)
 query.set_field("chefPublishedRecipes", resolvers.resolve_chef_published_recipes)
+query.set_field("myStories", stories_resolvers.resolve_my_stories)
 
 mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)

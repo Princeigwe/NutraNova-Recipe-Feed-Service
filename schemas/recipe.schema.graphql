@@ -199,6 +199,14 @@ type RecipeCommentsResponse{
 }
 
 
+type Story{
+  _id: String
+  username: String
+  encoded: String
+  date: String
+}
+
+
 "The query resolvers"
 type Query{
   recipeTags: [String]!
@@ -219,6 +227,9 @@ type Query{
 
   "fetch published recipes by a chef's username"
   chefPublishedRecipes(username: String): [Recipe]
+
+  "stories uploaded by the current user"
+  myStories: [Story]
 }
 
 "The mutation resolvers"

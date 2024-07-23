@@ -17,6 +17,7 @@ query.set_field("mySavedRecipes", resolvers.resolve_my_saved_recipes)
 query.set_field("commentReplies", resolvers.resolve_comment_replies)
 query.set_field("chefPublishedRecipes", resolvers.resolve_chef_published_recipes)
 query.set_field("myStories", stories_resolvers.resolve_my_stories)
+query.set_field("followingsStories", stories_resolvers.resolve_followings_stories)
 
 mutation = MutationType()
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)

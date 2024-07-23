@@ -206,6 +206,11 @@ type Story{
   date: String
 }
 
+type FollowingStories{
+  username: String
+  stories: [Story]
+}
+
 
 "The query resolvers"
 type Query{
@@ -230,6 +235,9 @@ type Query{
 
   "stories uploaded by the current user"
   myStories: [Story]
+
+  "stories uploaded by chefs the user is following"
+  followingsStories: [FollowingStories]
 }
 
 "The mutation resolvers"

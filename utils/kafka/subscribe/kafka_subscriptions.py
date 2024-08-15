@@ -13,7 +13,6 @@ def consume_kafka_messages():
     'security_protocol': 'SASL_SSL',
     'sasl_plain_username': os.environ.get('UPSTASH_KAFKA_USERNAME'),
     'sasl_plain_password': os.environ.get('UPSTASH_KAFKA_PASSWORD'),
-    'auto.offset.reset': 'latest'
   }
 
   UPSTASH_KAFKA_USER_DATA_UPDATE_TOPIC = os.environ.get('UPSTASH_KAFKA_USER_DATA_UPDATE_TOPIC')
@@ -30,7 +29,9 @@ def consume_kafka_messages():
     security_protocol=consumer_config['security_protocol'],
     sasl_plain_username=consumer_config['sasl_plain_username'],
     sasl_plain_password=consumer_config['sasl_plain_password'],
-    auto_offset_reset=consumer_config['auto.offset.reset'],
+    auto_offset_reset="latest",
+    group_id="recipe_relation",
+    auto_commit_interval_ms=1000,
     value_deserializer=lambda m: json.loads(m.decode('ascii')),
     api_version=(0, 10, 2)
   )

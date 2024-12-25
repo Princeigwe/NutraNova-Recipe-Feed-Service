@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 load_dotenv()
 import json
 from django.core.cache import cache
-from rabbitmq.rabbitmq_config import channel
 
 
 def consume_user_recommended_feed(message):

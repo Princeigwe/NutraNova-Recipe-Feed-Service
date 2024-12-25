@@ -14,12 +14,16 @@ from asgiref.sync import sync_to_async
 import time
 from threads.kafka_graph_chef_vote_recipe_thread import GraphChefVoteRecipeThread
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
-from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
+from utils.rabbitmq.publishers.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 from enums.choices import VoteType
 from utils.calculate_new_recommended_feed import calculate_new_recommended_feed
 from utils.multiselect_to_list import multiselect_to_list
+import os
+
+rabbitmq_message_type = os.environ.get('RECIPE_PUBLISHED_MESSAGE_TYPE')
+
 
 #* get_user(info) function in resolver functions are called to facilitate authenticated requests, and get user details
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
@@ -54,9 +58,12 @@ def resolve_create_recipe(_, info, input: dict):
   user = get_user(info)
   request = info.context['request']
 
+  chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+  print(chef)
   try:
-
-    chef, created = Chef.objects.get_or_create(image= user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    print("recipe creating")
+    chef, created = Chef.objects.get_or_create( username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    # print("recipe creating")
     title = input['title']
     description = input['description']
     ingredients = input['ingredients']
@@ -156,6 +163,8 @@ def resolve_create_recipe(_, info, input: dict):
   
   except ConnectionError as e:
     raise Exception(e)
+  ## todo: write the necessary except block fo catching error when fetching a chef
+  
   
   # key error on deleting session with non-existing key 
   except KeyError:
@@ -243,9 +252,10 @@ def resolve_edit_recipe(_, info, input):
       delete_video_thread = DeleteVideoThread(existing_recipe_video_public_id)
       delete_video_thread.start()
     
-    # send message to kafka if recipe status is 'PUBLISHED'
+    # send message to rabbitmq if recipe status is 'PUBLISHED'
     if existing_recipe_response['status'] == 'PUBLISHED':
-      kafka_message = {
+      event_message = {
+        "type": rabbitmq_message_type, # adding 'type' key to the message fixes the issue a consumer throws when is consumes different messages to work with
         "chef_username": chef_details['username'],
         "chef_first_name": chef_details['first_name'],
         "chef_last_name": chef_details['last_name'],
@@ -261,7 +271,7 @@ def resolve_edit_recipe(_, info, input):
         "recipe_published": str(existing_recipe_response['published']),
         "tags": existing_recipe_response['tags']
       }
-      send_graph_nodes_details(kafka_message)
+      send_graph_nodes_details(event_message)
       return {
         "message": "Recipe published",
         "recipe": existing_recipe_response
@@ -273,6 +283,7 @@ def resolve_edit_recipe(_, info, input):
     }
   except Recipe.DoesNotExist as e:
     raise Exception(e)
+  ## todo: write the necessary except block fo catching error when fetching a chef
 
 
 

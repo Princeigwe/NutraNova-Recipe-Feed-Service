@@ -53,6 +53,7 @@ def callback(ch, method, properties, body):
 
 
 def consume():
+  channel.basic_qos(prefetch_count=100) # setting the maximum number of in-progress mesesages to 100
   channel.basic_consume(queue, callback)
   channel.start_consuming()
 

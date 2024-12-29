@@ -10,14 +10,11 @@ import os
 rabbitmq_message_type = os.environ.get('CHEF_DATA_UPDATE_MESSAGE_TYPE')
 
 
-##** this queue was manually created on the dashboard
-# queue = os.environ.get('CLOUDAMQP_USER_DATA_UPDATE_QUEUE')
-
 exchange_name=os.environ.get('CLOUDAMQP_FANOUT_EXCHANGE')
 
 # creating and binding queue to fanout exchange
 queue = os.environ.get('CLOUDAMQP_RECIPE_CHEF_DATA_UPDATE_QUEUE')
-result = channel.queue_declare(queue=queue, exclusive=True) # 'exclusive' argument deletes queue once consumer connection is deleted
+result = channel.queue_declare(queue=queue, durable=True)
 channel.queue_bind(exchange=exchange_name, queue=result.method.queue)
 
 def consume_and_update_chef_data(message):
@@ -56,7 +53,7 @@ def callback(ch, method, properties, body):
 
 
 def consume():
-  channel.basic_consume(queue, callback, auto_ack=True)
+  channel.basic_consume(queue, callback)
   channel.start_consuming()
 
 

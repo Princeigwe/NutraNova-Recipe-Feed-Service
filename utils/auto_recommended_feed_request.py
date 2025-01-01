@@ -1,6 +1,5 @@
 import redis
 import os
-# from .kafka.produce.request_recommended_feed import request_user_recommended_feed
 from .rabbitmq.publishers.request_recommended_feed import request_user_recommended_feed
 
 
@@ -57,7 +56,7 @@ def auto_request_recommended_feeds():
     for username in usernames:
         # request_user_recommended_feed(username)
         request_user_recommended_feed({"type": rabbitmq_message_type, "username": username})
-        print(f"Auto-feed request for {username}")
+        print(f"Auto-feed request for {username} with message type: {rabbitmq_message_type}")
 
 
 

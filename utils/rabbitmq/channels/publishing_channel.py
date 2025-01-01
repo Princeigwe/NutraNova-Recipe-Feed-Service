@@ -1,6 +1,4 @@
-import pika, os, logging
-from pika.exceptions import AMQPError
-import json
+import pika, os
 
 url = os.environ.get('CLOUDAMQP_URL')
 params = pika.URLParameters(url)

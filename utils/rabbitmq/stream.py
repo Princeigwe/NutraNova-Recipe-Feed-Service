@@ -1,5 +1,5 @@
 import os
-from .channels.stream_channel import channel
+from .channels.consuming_channel import channel
 from .consumers.consume_chef_data import consume_and_update_chef_data
 import json
 

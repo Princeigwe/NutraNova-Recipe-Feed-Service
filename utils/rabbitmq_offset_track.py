@@ -1,12 +1,17 @@
-from django.db import connection
+from django.db import connection, connections
 
 # this function is called in settings.py
 # this table is designed to keep track of the total amount of messages sent to the stream, 
 # which will act as the offset when consuming messages that were missed as a result of downtime and network failure
 def create_offset_table():
-  cursor = connection.cursor()
-  cursor.execute("CREATE TABLE IF NOT EXISTS rabbitmq_message_offset ( id INT PRIMARY KEY NOT NULL, message_offset INT NOT NULL)")
-  print("table created")
+  try:
+    # Check if the default database connection is alive
+    connections['default'].cursor()
+    cursor = connection.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS rabbitmq_message_offset ( id INT PRIMARY KEY NOT NULL, message_offset INT NOT NULL)")
+    print("table created")
+  except Exception:
+    return None
 
 
 def create_offset_record(id, offset):

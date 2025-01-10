@@ -12,8 +12,8 @@ import asyncio
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
-from threads.kafka_graph_chef_vote_recipe_thread import GraphChefVoteRecipeThread
 from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
+from utils.rabbitmq.publishers.vote_recipe import send_chef_vote_recipe_details
 from utils.rabbitmq.publishers.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
@@ -593,6 +593,7 @@ def resolve_single_recipe_sub(response, obj, pk):
 
 
 def resolve_up_vote_recipe(_, info, pk):
+  rabbitmq_message_type = os.environ.get('VOTE_RECIPE_MESSAGE_TYPE')
   user = get_user(info)
   request = info.context['request']
 
@@ -602,7 +603,7 @@ def resolve_up_vote_recipe(_, info, pk):
     # the object creation is implemented because the current user may be a new user who
     # starts voting recipes without creating or publishing recipes
     # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
-    voter, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -622,8 +623,9 @@ def resolve_up_vote_recipe(_, info, pk):
         "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
         "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
-      # send message to kafka
-      kafka_message = {
+      # send message to rabbitmq
+      event_message = {
+        "type": rabbitmq_message_type,
         "voter_username": user['username'],
         "voter_first_name": user['first_name'],
         "voter_last_name": user['last_name'],
@@ -633,9 +635,8 @@ def resolve_up_vote_recipe(_, info, pk):
         "recipe_published": str(recipe.published),
       }
 
-      # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_vote_recipe_thread.start()
+      # sending rabbitmq message for voted recipe to the recommendations microservice
+      send_chef_vote_recipe_details(event_message)
       
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
@@ -647,6 +648,7 @@ def resolve_up_vote_recipe(_, info, pk):
 
 
 def resolve_down_vote_recipe(_, info, pk):
+  rabbitmq_message_type = os.environ.get('VOTE_RECIPE_MESSAGE_TYPE')
   user = get_user(info)
   request = info.context['request']
 
@@ -656,7 +658,7 @@ def resolve_down_vote_recipe(_, info, pk):
     # the object creation is implemented because the current user may be a new user who
     # starts voting recipes without creating or publishing recipes
     # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
-    voter, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -676,8 +678,9 @@ def resolve_down_vote_recipe(_, info, pk):
         "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
         "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
-      # send message to kafka
-      kafka_message = {
+      # send message to rabbitmq
+      event_message = {
+        "type": rabbitmq_message_type,
         "voter_username": user['username'],
         "voter_first_name": user['first_name'],
         "voter_last_name": user['last_name'],
@@ -687,9 +690,9 @@ def resolve_down_vote_recipe(_, info, pk):
         "recipe_published": str(recipe.published),
       }
 
-      # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_vote_recipe_thread.start()
+      # sending rabbitmq message for voted recipe to the recommendations microservice
+      send_chef_vote_recipe_details(event_message)
+
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already")

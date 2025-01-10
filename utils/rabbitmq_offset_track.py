@@ -45,14 +45,19 @@ def update_offset_record(id, new_offset):
 
 
 def get_offset_record(id):
-  cursor = connection.cursor()
-  cursor.execute(
-    """
-    SELECT id, message_offset
-    FROM rabbitmq_message_offset
-    WHERE id = %s
-    """, [id]
-    )
-  row = cursor.fetchone()
-  if row:
-    return row
+  try:
+    # Check if the default database connection is alive
+    connections['default'].cursor()
+    cursor = connection.cursor()
+    cursor.execute(
+      """
+      SELECT id, message_offset
+      FROM rabbitmq_message_offset
+      WHERE id = %s
+      """, [id]
+      )
+    row = cursor.fetchone()
+    if row:
+      return row
+  except Exception:
+    return None

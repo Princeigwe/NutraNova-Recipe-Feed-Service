@@ -217,7 +217,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
 # custom table configuration to keep track of current rabbitmq message delivery tag to be used as an offset
-RABBITMQ_OFFSET_TABLE = create_offset_table()
+RABBITMQ_OFFSET_TABLE = create_offset_table() if callable(create_offset_table) else (0,0) ## attempt to fix the postgres connection issue brought up by CICD pipeline. (0,0) is a dummy tuple
 RABBITMQ_OFFSET_RECORD = get_offset_record(1)
 RABBITMQ_OFFSET_VALUE = RABBITMQ_OFFSET_RECORD[1]
 print("current rabbitmq consumer offset: ", RABBITMQ_OFFSET_VALUE)

@@ -13,5 +13,4 @@ class RecipesConfig(AppConfig):
             # call_command('kafka_consumer') # calling the custom "kafka_consumer" command
             call_command('execute_schedules') # calling the custom "execute_schedules" command
             call_command('rabbitmq_consumers')
-            # call_command('execute_schedules') # calling the custom "execute_schedules" command
             self.function_executed = True

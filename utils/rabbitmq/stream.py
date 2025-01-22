@@ -6,8 +6,6 @@ import json
 
 # stream declaration
 stream_name=os.environ.get('RABBITMQ_STREAM')
-# queue = channel.queue_declare(queue=stream_name, durable=True, arguments={"x-queue-type": "stream"})
-# queue_length = queue.method.message_count
 
 chef_data_update_message_type = os.environ.get('CHEF_DATA_UPDATE_MESSAGE_TYPE')
 recommended_feed_message_type = os.environ.get('RECOMMENDED_FEED_MESSAGE_TYPE')

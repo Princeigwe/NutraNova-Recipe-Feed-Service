@@ -14,7 +14,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
-from utils.rabbitmq_offset_track import create_offset_table, get_offset_record
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -215,9 +214,3 @@ CORS_ALLOW_ALL_ORIGINS = True
 # this fixed the issue of not being able to fetch tags MANY-TO-MANY field in single recipe subscription
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
-
-# custom table configuration to keep track of current rabbitmq message delivery tag to be used as an offset
-RABBITMQ_OFFSET_TABLE = create_offset_table()
-RABBITMQ_OFFSET_RECORD = get_offset_record(1)
-RABBITMQ_OFFSET_VALUE = RABBITMQ_OFFSET_RECORD[1] if RABBITMQ_OFFSET_RECORD else None
-print("current rabbitmq consumer offset: ", RABBITMQ_OFFSET_VALUE)

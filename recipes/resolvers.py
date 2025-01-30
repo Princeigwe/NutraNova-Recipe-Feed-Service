@@ -29,6 +29,19 @@ rabbitmq_message_type = os.environ.get('RECIPE_PUBLISHED_MESSAGE_TYPE')
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
 
+def resolve_add_tag(_, info, name):
+  user = get_user(info)
+  try:
+    if user['is_superuser']:
+      recipe_tag, created = Tag.objects.get_or_create(name=name)
+      message = f"{recipe_tag.name} is created"
+      return message
+    else:
+      return "Unauthorized operation"
+  except Exception as e:
+    print (e)
+
+  
 #!: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
   try:

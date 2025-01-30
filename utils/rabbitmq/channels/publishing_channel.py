@@ -1,6 +1,9 @@
 import pika, os
 
-url = os.environ.get('CLOUDAMQP_URL')
+ENVIRONMENT = os.environ.get("ENVIRONMENT", default="production" )
+
+
+url = os.environ.get('CLOUDAMQP_URL') if ENVIRONMENT == 'production' else "amqp://guest:guest@rabbitmq:5672/"
 params = pika.URLParameters(url)
 params.heartbeat = 0
 

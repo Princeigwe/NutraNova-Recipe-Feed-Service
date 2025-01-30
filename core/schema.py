@@ -20,6 +20,7 @@ query.set_field("myStories", stories_resolvers.resolve_my_stories)
 query.set_field("followingsStories", stories_resolvers.resolve_followings_stories)
 
 mutation = MutationType()
+mutation.set_field("addTag", resolvers.resolve_add_tag)
 mutation.set_field("createRecipe", resolvers.resolve_create_recipe)
 mutation.set_field("editRecipe", resolvers.resolve_edit_recipe)
 mutation.set_field("deleteRecipe", resolvers.resolve_delete_recipe)

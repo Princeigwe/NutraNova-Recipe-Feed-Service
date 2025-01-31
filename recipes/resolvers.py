@@ -80,9 +80,7 @@ def resolve_create_recipe(_, info, input: dict):
     #* this is to prevent creation of published recipes nodes with the same title by the same chef in the recommendation microservice
     try:
       Recipe.objects.get(title=input['title'], chef=chef)
-      return {
-      "message": "Recipe with this title already exists, please try a different title."
-      }
+      raise ValueError("A recipe from you with this title already exists, please try something different.")
     except Recipe.DoesNotExist:
       pass
 
@@ -199,15 +197,25 @@ def resolve_edit_recipe(_, info, input):
   user = get_user(info)
   request = info.context['request']
   try:
+
+    try:
+      if 'title' in input:
+        # checking for other recipes from the chef that may have the same title
+        Recipe.objects.get(title=input['title'], chef__username=user['username'])
+        raise ValueError("A recipe from you with this title already exists, please try something different.")
+    except Recipe.DoesNotExist:
+      pass
+
     if 'tags' in input and len(input['tags']) > 5:
       raise Exception("Recipe tags is limited to a number of 5")
     
     if 'images' in input and len( input['images'] ) > 2:
       raise Exception("Maximum of 2 images required.")
     
-    current_chef = Chef.objects.get(username=user['username'])
+    # current_chef = Chef.objects.get(username=user['username'])
     recipe_id = input['id']
-    existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
+    # existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
+    existing_recipe = Recipe.objects.get(id=recipe_id, chef__username=user['username'])
 
     if existing_recipe.status == "PUBLISHED":
       raise Exception("Published recipe can no longer be edited")
@@ -306,7 +314,9 @@ def resolve_edit_recipe(_, info, input):
     }
   except Recipe.DoesNotExist as e:
     raise Exception(e)
-  ## todo: write the necessary except block fo catching error when fetching a chef
+
+  except Chef.DoesNotExist as e:
+    raise Exception(e)
 
 
 

@@ -71,12 +71,21 @@ def resolve_create_recipe(_, info, input: dict):
   user = get_user(info)
   request = info.context['request']
 
-  chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
-  print(chef)
+
   try:
     print("recipe creating")
-    chef, created = Chef.objects.get_or_create( username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
-    # print("recipe creating")
+    chef, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+
+    #* checking for recipes with the same titles published by the same chef.
+    #* this is to prevent creation of published recipes nodes with the same title by the same chef in the recommendation microservice
+    try:
+      Recipe.objects.get(title=input['title'], chef=chef)
+      return {
+      "message": "Recipe with this title already exists, please try a different title."
+      }
+    except Recipe.DoesNotExist:
+      pass
+
     title = input['title']
     description = input['description']
     ingredients = input['ingredients']
@@ -176,8 +185,9 @@ def resolve_create_recipe(_, info, input: dict):
   
   except ConnectionError as e:
     raise Exception(e)
-  ## todo: write the necessary except block fo catching error when fetching a chef
-  
+
+  except Chef.DoesNotExist as e:
+    raise Exception(e)
   
   # key error on deleting session with non-existing key 
   except KeyError:

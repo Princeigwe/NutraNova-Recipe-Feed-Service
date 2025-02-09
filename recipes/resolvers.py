@@ -161,6 +161,7 @@ def resolve_create_recipe(_, info, input: dict):
 
     # using snake-cased keys because GraphQL camel-cased response keys were not getting data. Also changed in schema
     chef_details = {
+      "image": recipe.chef.image,
       "username": recipe.chef.username,
 			"first_name": recipe.chef.first_name,
 			"last_name": recipe.chef.last_name,
@@ -368,6 +369,8 @@ def resolve_recipe_feed(_, info):
     existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
     if existing_user_followings_cache == None:
       print(f" {username} following cache does not exist")
+
+      # fetch user followings from users-microservice
       user_followings = fetch_user_followings(user['username'], access_token)
       print( user_followings['data']['userFollowing']['users'] )
       # print( user_followings)

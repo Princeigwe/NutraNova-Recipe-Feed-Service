@@ -12,7 +12,6 @@ import asyncio
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
-from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from utils.rabbitmq.publishers.vote_recipe import send_chef_vote_recipe_details
 from utils.rabbitmq.publishers.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
@@ -426,7 +425,7 @@ def resolve_recipe_feed(_, info):
               "down_voters": unique_down_voters
             }
             feed.append(recipe_response)
-            
+
         except Recipe.DoesNotExist:
           pass
         

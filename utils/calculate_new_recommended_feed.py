@@ -1,5 +1,4 @@
 import os
-from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
 from .rabbitmq.publishers.request_recommended_feed import request_user_recommended_feed
 
 

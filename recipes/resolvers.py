@@ -391,41 +391,42 @@ def resolve_recipe_feed(_, info):
       for user in user_followings_cache:
         chef = Chef.objects.get(username=user['username'])
         try:
-          # todo: edit this to fetch 3 or more latest recipes from each chef in in following_cache
-          chef_latest_recipe = chef.recipes.filter(status='PUBLISHED').latest('published')
-          chef_latest_recipe_dict = model_to_dict(chef_latest_recipe, exclude=['created', 'published', 'chef', 'tags'])
-          chef_detail = {
-            "username": chef.username,
-            "first_name": chef.first_name,
-            "last_name": chef.last_name,
-            "is_verified": chef.is_verified
-          }
-          chef_latest_recipe_dict['chef'] = chef_detail
-          chef_latest_recipe_dict['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
-          chef_latest_recipe_dict['created'] = chef.recipes.latest('published').created
-          chef_latest_recipe_dict['published'] = chef.recipes.latest('published').published
+          # fetching the latest 3 recipes 
+          chef_latest_recipes = chef.recipes.filter(status='PUBLISHED').order_by('-status')[:3]
+          for latest_recipe in chef_latest_recipes:
+            chef_latest_recipe_dict = model_to_dict(latest_recipe, exclude=['created', 'published', 'chef', 'tags'])
+            chef_detail = {
+              "username": chef.username,
+              "first_name": chef.first_name,
+              "last_name": chef.last_name,
+              "is_verified": chef.is_verified
+            }
+            chef_latest_recipe_dict['chef'] = chef_detail
+            chef_latest_recipe_dict['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
+            chef_latest_recipe_dict['created'] = chef.recipes.latest('published').created
+            chef_latest_recipe_dict['published'] = chef.recipes.latest('published').published
 
-          number_of_up_votes = chef_latest_recipe.upVotes.count()
-          recipe_up_votes = chef_latest_recipe.upVotes.all()
-          up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
-          # making this unique for voters with vote_strength > 1.
-          unique_up_voters = list(set(up_voters))
+            number_of_up_votes = latest_recipe.upVotes.count()
+            recipe_up_votes = latest_recipe.upVotes.all()
+            up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
 
-          number_of_down_votes = chef_latest_recipe.downVotes.count()
-          recipe_down_votes = chef_latest_recipe.downVotes.all()
-          down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
-          unique_down_voters = list(set(down_voters))
+            # making this unique for voters with vote_strength > 1.
+            unique_up_voters = list(set(up_voters))
 
-          recipe_response = {
-            "recipe": chef_latest_recipe_dict,
-            "up_votes": number_of_up_votes,
-            "up_voters": unique_up_voters,
-            "down_votes": number_of_down_votes,
-            "down_voters": unique_down_voters
-          }
+            number_of_down_votes = latest_recipe.downVotes.count()
+            recipe_down_votes = latest_recipe.downVotes.all()
+            down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
+            unique_down_voters = list(set(down_voters))
 
-          # feed.append(chef_latest_recipe)
-          feed.append(recipe_response)
+            recipe_response = {
+              "recipe": chef_latest_recipe_dict,
+              "up_votes": number_of_up_votes,
+              "up_voters": unique_up_voters,
+              "down_votes": number_of_down_votes,
+              "down_voters": unique_down_voters
+            }
+            feed.append(recipe_response)
+            
         except Recipe.DoesNotExist:
           pass
         

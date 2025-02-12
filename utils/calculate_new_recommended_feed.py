@@ -20,10 +20,6 @@ def calculate_new_recommended_feed(request, user):
 
   if vote_click_count == 5:
     #* send rabbitmq message to recommendation service to process recommended feed data. 
-    # # todo: REMOVE THIS
-    # kafka_recommendation_message = user['username']
-    # request_recommended_feed_thread = RequestRecommendedFeedThread(kafka_recommendation_message)
-    # request_recommended_feed_thread.start()
 
     username = user['username']
     request_user_recommended_feed({"type": rabbitmq_message_type, "username": username})

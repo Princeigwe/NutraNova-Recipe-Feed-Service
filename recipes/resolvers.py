@@ -74,7 +74,7 @@ def resolve_create_recipe(_, info, input: dict):
 
   try:
     print("recipe creating")
-    chef, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+    chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
 
     #* checking for recipes with the same titles published by the same chef.
     #* this is to prevent creation of published recipes nodes with the same title by the same chef in the recommendation microservice

@@ -38,7 +38,7 @@ def upload_story(request, image_path):
 
     image_size = os.path.getsize(directed_path)
 
-    limit_size = 5242880 #5MB
+    limit_size = 10485760 # 10MB
 
     # as long as the webp image is more than 5MB, compress it
     while image_size > limit_size:

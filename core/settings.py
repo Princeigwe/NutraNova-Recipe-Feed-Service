@@ -220,6 +220,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+
 # this fixed the issue of not being able to fetch tags MANY-TO-MANY field in single recipe subscription
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 

@@ -22,7 +22,7 @@ from .schema import schema
 from django.conf import settings
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('adfelasjgkln/', admin.site.urls),
     path('file/', include('file.urls')),
 
     path('graphql/', GraphQLView.as_view(schema=schema), name='graphql'),

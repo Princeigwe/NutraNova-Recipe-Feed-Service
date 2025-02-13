@@ -65,6 +65,7 @@ input TimeInput{
   seconds: Int
 }
 
+
 "Schema representing data body for recipe creation"
 input CreateRecipeInput{
   title: String!
@@ -106,6 +107,7 @@ type Chef{
   vote_strength: Int
   is_verified: Boolean
 }
+
 
 
 "Schema type for recipe nutritional value"
@@ -242,6 +244,7 @@ type Query{
 
 "The mutation resolvers"
 type Mutation{
+  addTag(name: String): String
   createRecipe(input: CreateRecipeInput): RecipeResponse
   editRecipe(input: EditRecipeInput): RecipeResponse
   deleteRecipe(pk: Int): String

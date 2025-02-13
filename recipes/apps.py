@@ -10,6 +10,6 @@ class RecipesConfig(AppConfig):
     def ready(self) -> None:
         if os.environ.get('RUN_MAIN'):
             print("hello server")
-            call_command('kafka_consumer') # calling the custom "kafka_consumer" command
             call_command('execute_schedules') # calling the custom "execute_schedules" command
+            call_command('rabbitmq_consumers')
             self.function_executed = True

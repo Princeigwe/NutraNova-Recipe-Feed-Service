@@ -22,11 +22,11 @@ def upload_story(request, image_path):
   user = get_user_rest(request)
 
   #* SOLUTION ON HOW TO SAVE MEDIA FILES IN MONGODB AND EFFECTIVELY REPRESENT THAT DATA IN GRAPHQL DATA SCHEMA:
-  #todo 1: when file is selected, convert to webp to reduce size and maintain quality.
-  #todo 2: compress it further to 1mb to retain all data without loss when encoding.
-  #todo 3: read the file buffer data and encode it in base64
-  #todo 4: save the encoded string to mongodb with the attribute "base64_encoded"
-  #todo 5: to represent this data in GraphQL schema, use the String data type
+  #* 1: when file is selected, convert to webp to reduce size and maintain quality.
+  #* 2: compress it further to 1mb to retain all data without loss when encoding.
+  #* 3: read the file buffer data and encode it in base64
+  #* 4: save the encoded string to mongodb with the attribute "base64_encoded"
+  #* 5: to represent this data in GraphQL schema, use the String data type
   if image_path.endswith(".jpg") or image_path.endswith(".jpeg") or image_path.endswith(".png"):
 
     default_media_path = settings.MEDIA_ROOT  # media directory
@@ -38,7 +38,7 @@ def upload_story(request, image_path):
 
     image_size = os.path.getsize(directed_path)
 
-    limit_size = 5242880 #5MB
+    limit_size = 10485760 # 10MB
 
     # as long as the webp image is more than 5MB, compress it
     while image_size > limit_size:

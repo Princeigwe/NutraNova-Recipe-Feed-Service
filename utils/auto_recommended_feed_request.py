@@ -1,6 +1,6 @@
 import redis
 import os
-from .kafka.produce.request_recommended_feed import request_user_recommended_feed
+from .rabbitmq.publishers.request_recommended_feed import request_user_recommended_feed
 
 
 def fetch_redis_keys():
@@ -32,6 +32,7 @@ def getUserNameFromCacheKey(input_string):
 
 
 def auto_request_recommended_feeds():
+    rabbitmq_message_type = os.environ.get('REQUEST_RECOMMENDED_FEED_MESSAGE_TYPE')
     """ this function will be used together with Python Scheduler()
         to automatically request for recipe feeds recommended by the recommendation microservice,
         for every on-boarded user that has a following
@@ -53,8 +54,9 @@ def auto_request_recommended_feeds():
     print("caches of usernames with followings: ", usernames)
 
     for username in usernames:
-        request_user_recommended_feed(username)
-        print(f"Auto-feed request for {username}")
+        # request_user_recommended_feed(username)
+        request_user_recommended_feed({"type": rabbitmq_message_type, "username": username})
+        print(f"Auto-feed request for {username} with message type: {rabbitmq_message_type}")
 
 
 

@@ -44,7 +44,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = int(os.environ.get('DEBUG', default=0))
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'nutranova-recipe.onrender.com']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'nutranova-recipe.onrender.com', 'recipes-service'] # recipes-service refers to the docker container in the compose file
 
 
 
@@ -141,15 +141,24 @@ DATABASES = {
     #     'NAME': BASE_DIR / 'db.sqlite3',
     # }
 
-
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get('AIVEN_DATABASE_NAME'),
-        'USER': os.environ.get('AIVEN_USER'),
-        'PASSWORD': os.environ.get('AIVEN_PASSWORD'),
-        'HOST': os.environ.get('AIVEN_HOST'),
-        'PORT': os.environ.get('AIVEN_PORT'),
-    },
+        'NAME': os.environ.get('AIVEN_DATABASE_NAME') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_NAME'),
+        'USER': os.environ.get('AIVEN_USER') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_USERNAME'),
+        'PASSWORD': os.environ.get('AIVEN_PASSWORD') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_PASSWORD'),
+        'HOST': os.environ.get('AIVEN_HOST', 'DEV_RECIPES_DB_HOST') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_HOST'),
+        'PORT': os.environ.get('AIVEN_PORT', 'DEV_RECIPES_DB_PORT') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_PORT') ,
+    }
+
+
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': os.environ.get('AIVEN_DATABASE_NAME'),
+    #     'USER': os.environ.get('AIVEN_USER'),
+    #     'PASSWORD': os.environ.get('AIVEN_PASSWORD'),
+    #     'HOST': os.environ.get('AIVEN_HOST'),
+    #     'PORT': os.environ.get('AIVEN_PORT'),
+    # },
 }
 
 
@@ -213,3 +222,4 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # this fixed the issue of not being able to fetch tags MANY-TO-MANY field in single recipe subscription
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+

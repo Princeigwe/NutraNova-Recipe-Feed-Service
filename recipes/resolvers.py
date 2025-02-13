@@ -12,19 +12,35 @@ import asyncio
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 import time
-from threads.kafka_graph_chef_vote_recipe_thread import GraphChefVoteRecipeThread
-from threads.kafka_request_recommended_feed_thread import RequestRecommendedFeedThread
-from utils.kafka.produce.create_neo_graph_nodes import send_graph_nodes_details
+from utils.rabbitmq.publishers.vote_recipe import send_chef_vote_recipe_details
+from utils.rabbitmq.publishers.create_neo_graph_nodes import send_graph_nodes_details
 from utils.follow_chefs_recommendations import follow_chefs_recommendations_for_current_user
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 from enums.choices import VoteType
 from utils.calculate_new_recommended_feed import calculate_new_recommended_feed
 from utils.multiselect_to_list import multiselect_to_list
+import os
+
+rabbitmq_message_type = os.environ.get('RECIPE_PUBLISHED_MESSAGE_TYPE')
+
 
 #* get_user(info) function in resolver functions are called to facilitate authenticated requests, and get user details
 #* Tag objects are created directly on PostgreSQL with PGAdmin. I dont think this should be so.
 #* my brain is occupied at the moment to write an alternative
 
+def resolve_add_tag(_, info, name):
+  user = get_user(info)
+  try:
+    if user['is_superuser']:
+      recipe_tag, created = Tag.objects.get_or_create(name=name)
+      message = f"{recipe_tag.name} is created"
+      return message
+    else:
+      return "Unauthorized operation"
+  except Exception as e:
+    print (e)
+
+  
 #!: do not add the database_sync_to_async decorator, since this function is not being resolved
 def get_tag(name):
   try:
@@ -54,9 +70,19 @@ def resolve_create_recipe(_, info, input: dict):
   user = get_user(info)
   request = info.context['request']
 
-  try:
 
-    chef, created = Chef.objects.get_or_create(image= user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+  try:
+    print("recipe creating")
+    chef, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
+
+    #* checking for recipes with the same titles published by the same chef.
+    #* this is to prevent creation of published recipes nodes with the same title by the same chef in the recommendation microservice
+    try:
+      Recipe.objects.get(title=input['title'], chef=chef)
+      raise ValueError("A recipe from you with this title already exists, please try something different.")
+    except Recipe.DoesNotExist:
+      pass
+
     title = input['title']
     description = input['description']
     ingredients = input['ingredients']
@@ -134,6 +160,7 @@ def resolve_create_recipe(_, info, input: dict):
 
     # using snake-cased keys because GraphQL camel-cased response keys were not getting data. Also changed in schema
     chef_details = {
+      "image": recipe.chef.image,
       "username": recipe.chef.username,
 			"first_name": recipe.chef.first_name,
 			"last_name": recipe.chef.last_name,
@@ -156,6 +183,9 @@ def resolve_create_recipe(_, info, input: dict):
   
   except ConnectionError as e:
     raise Exception(e)
+
+  except Chef.DoesNotExist as e:
+    raise Exception(e)
   
   # key error on deleting session with non-existing key 
   except KeyError:
@@ -167,15 +197,25 @@ def resolve_edit_recipe(_, info, input):
   user = get_user(info)
   request = info.context['request']
   try:
+
+    try:
+      if 'title' in input:
+        # checking for other recipes from the chef that may have the same title
+        Recipe.objects.get(title=input['title'], chef__username=user['username'])
+        raise ValueError("A recipe from you with this title already exists, please try something different.")
+    except Recipe.DoesNotExist:
+      pass
+
     if 'tags' in input and len(input['tags']) > 5:
       raise Exception("Recipe tags is limited to a number of 5")
     
     if 'images' in input and len( input['images'] ) > 2:
       raise Exception("Maximum of 2 images required.")
     
-    current_chef = Chef.objects.get(username=user['username'])
+    # current_chef = Chef.objects.get(username=user['username'])
     recipe_id = input['id']
-    existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
+    # existing_recipe = Recipe.objects.get(chef=current_chef, id=recipe_id)
+    existing_recipe = Recipe.objects.get(id=recipe_id, chef__username=user['username'])
 
     if existing_recipe.status == "PUBLISHED":
       raise Exception("Published recipe can no longer be edited")
@@ -243,9 +283,10 @@ def resolve_edit_recipe(_, info, input):
       delete_video_thread = DeleteVideoThread(existing_recipe_video_public_id)
       delete_video_thread.start()
     
-    # send message to kafka if recipe status is 'PUBLISHED'
+    # send message to rabbitmq if recipe status is 'PUBLISHED'
     if existing_recipe_response['status'] == 'PUBLISHED':
-      kafka_message = {
+      event_message = {
+        "type": rabbitmq_message_type, # adding 'type' key to the message fixes the issue a consumer throws when is consumes different messages to work with
         "chef_username": chef_details['username'],
         "chef_first_name": chef_details['first_name'],
         "chef_last_name": chef_details['last_name'],
@@ -261,7 +302,7 @@ def resolve_edit_recipe(_, info, input):
         "recipe_published": str(existing_recipe_response['published']),
         "tags": existing_recipe_response['tags']
       }
-      send_graph_nodes_details(kafka_message)
+      send_graph_nodes_details(event_message)
       return {
         "message": "Recipe published",
         "recipe": existing_recipe_response
@@ -272,6 +313,9 @@ def resolve_edit_recipe(_, info, input):
       "recipe": existing_recipe_response
     }
   except Recipe.DoesNotExist as e:
+    raise Exception(e)
+
+  except Chef.DoesNotExist as e:
     raise Exception(e)
 
 
@@ -324,6 +368,8 @@ def resolve_recipe_feed(_, info):
     existing_user_followings_cache = cache.get( f"{user['username']}_followings" )
     if existing_user_followings_cache == None:
       print(f" {username} following cache does not exist")
+
+      # fetch user followings from users-microservice
       user_followings = fetch_user_followings(user['username'], access_token)
       print( user_followings['data']['userFollowing']['users'] )
       # print( user_followings)
@@ -344,41 +390,42 @@ def resolve_recipe_feed(_, info):
       for user in user_followings_cache:
         chef = Chef.objects.get(username=user['username'])
         try:
-          # todo: edit this to fetch 3 or more latest recipes from each chef in in following_cache
-          chef_latest_recipe = chef.recipes.filter(status='PUBLISHED').latest('published')
-          chef_latest_recipe_dict = model_to_dict(chef_latest_recipe, exclude=['created', 'published', 'chef', 'tags'])
-          chef_detail = {
-            "username": chef.username,
-            "first_name": chef.first_name,
-            "last_name": chef.last_name,
-            "is_verified": chef.is_verified
-          }
-          chef_latest_recipe_dict['chef'] = chef_detail
-          chef_latest_recipe_dict['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
-          chef_latest_recipe_dict['created'] = chef.recipes.latest('published').created
-          chef_latest_recipe_dict['published'] = chef.recipes.latest('published').published
+          # fetching the latest 3 recipes 
+          chef_latest_recipes = chef.recipes.filter(status='PUBLISHED').order_by('-status')[:3]
+          for latest_recipe in chef_latest_recipes:
+            chef_latest_recipe_dict = model_to_dict(latest_recipe, exclude=['created', 'published', 'chef', 'tags'])
+            chef_detail = {
+              "username": chef.username,
+              "first_name": chef.first_name,
+              "last_name": chef.last_name,
+              "is_verified": chef.is_verified
+            }
+            chef_latest_recipe_dict['chef'] = chef_detail
+            chef_latest_recipe_dict['tags'] = chef.recipes.latest('published').tags.all().values_list('name', flat=True)
+            chef_latest_recipe_dict['created'] = chef.recipes.latest('published').created
+            chef_latest_recipe_dict['published'] = chef.recipes.latest('published').published
 
-          number_of_up_votes = chef_latest_recipe.upVotes.count()
-          recipe_up_votes = chef_latest_recipe.upVotes.all()
-          up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
-          # making this unique for voters with vote_strength > 1.
-          unique_up_voters = list(set(up_voters))
+            number_of_up_votes = latest_recipe.upVotes.count()
+            recipe_up_votes = latest_recipe.upVotes.all()
+            up_voters = [recipe_up_vote.voter for recipe_up_vote in recipe_up_votes]
 
-          number_of_down_votes = chef_latest_recipe.downVotes.count()
-          recipe_down_votes = chef_latest_recipe.downVotes.all()
-          down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
-          unique_down_voters = list(set(down_voters))
+            # making this unique for voters with vote_strength > 1.
+            unique_up_voters = list(set(up_voters))
 
-          recipe_response = {
-            "recipe": chef_latest_recipe_dict,
-            "up_votes": number_of_up_votes,
-            "up_voters": unique_up_voters,
-            "down_votes": number_of_down_votes,
-            "down_voters": unique_down_voters
-          }
+            number_of_down_votes = latest_recipe.downVotes.count()
+            recipe_down_votes = latest_recipe.downVotes.all()
+            down_voters = [recipe_down_vote.voter for recipe_down_vote in recipe_down_votes]
+            unique_down_voters = list(set(down_voters))
 
-          # feed.append(chef_latest_recipe)
-          feed.append(recipe_response)
+            recipe_response = {
+              "recipe": chef_latest_recipe_dict,
+              "up_votes": number_of_up_votes,
+              "up_voters": unique_up_voters,
+              "down_votes": number_of_down_votes,
+              "down_voters": unique_down_voters
+            }
+            feed.append(recipe_response)
+
         except Recipe.DoesNotExist:
           pass
         
@@ -582,6 +629,7 @@ def resolve_single_recipe_sub(response, obj, pk):
 
 
 def resolve_up_vote_recipe(_, info, pk):
+  rabbitmq_message_type = os.environ.get('VOTE_RECIPE_MESSAGE_TYPE')
   user = get_user(info)
   request = info.context['request']
 
@@ -591,7 +639,7 @@ def resolve_up_vote_recipe(_, info, pk):
     # the object creation is implemented because the current user may be a new user who
     # starts voting recipes without creating or publishing recipes
     # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
-    voter, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -611,8 +659,9 @@ def resolve_up_vote_recipe(_, info, pk):
         "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
         "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
-      # send message to kafka
-      kafka_message = {
+      # send message to rabbitmq
+      event_message = {
+        "type": rabbitmq_message_type,
         "voter_username": user['username'],
         "voter_first_name": user['first_name'],
         "voter_last_name": user['last_name'],
@@ -622,9 +671,8 @@ def resolve_up_vote_recipe(_, info, pk):
         "recipe_published": str(recipe.published),
       }
 
-      # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_vote_recipe_thread.start()
+      # sending rabbitmq message for voted recipe to the recommendations microservice
+      send_chef_vote_recipe_details(event_message)
       
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
@@ -636,6 +684,7 @@ def resolve_up_vote_recipe(_, info, pk):
 
 
 def resolve_down_vote_recipe(_, info, pk):
+  rabbitmq_message_type = os.environ.get('VOTE_RECIPE_MESSAGE_TYPE')
   user = get_user(info)
   request = info.context['request']
 
@@ -645,7 +694,7 @@ def resolve_down_vote_recipe(_, info, pk):
     # the object creation is implemented because the current user may be a new user who
     # starts voting recipes without creating or publishing recipes
     # voter = Chef.objects.get(username=user['username'], first_name=user['first_name'], last_name=user['last_name'])
-    voter, created = Chef.objects.get_or_create(image=user['image'], username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
+    voter, created = Chef.objects.get_or_create(username=user['username'], first_name=user['first_name'], last_name=user['last_name'], vote_strength=user['vote_strength'], is_verified=user['is_verified'])
     voter_up_votes_count = UpVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing upVotes by current user on a recipe 
     voter_down_votes_count = DownVote.objects.filter(voter=voter, recipe=recipe).count()  # counting existing downVotes by current user on a recipe
     if (voter_up_votes_count == 0 and voter_down_votes_count == 0):
@@ -665,8 +714,9 @@ def resolve_down_vote_recipe(_, info, pk):
         "medical_conditions": multiselect_to_list(user["medical_conditions"]), # multiselect preference
         "taste_preferences":  multiselect_to_list(user["taste_preferences"])  # multiselect preference
       }
-      # send message to kafka
-      kafka_message = {
+      # send message to rabbitmq
+      event_message = {
+        "type": rabbitmq_message_type,
         "voter_username": user['username'],
         "voter_first_name": user['first_name'],
         "voter_last_name": user['last_name'],
@@ -676,9 +726,9 @@ def resolve_down_vote_recipe(_, info, pk):
         "recipe_published": str(recipe.published),
       }
 
-      # sending kafka message in background thread to create chef-to-recipe :UPVOTE relationship in recommendations microservice
-      graph_chef_vote_recipe_thread = GraphChefVoteRecipeThread(kafka_message)
-      graph_chef_vote_recipe_thread.start()
+      # sending rabbitmq message for voted recipe to the recommendations microservice
+      send_chef_vote_recipe_details(event_message)
+
       return f"Your vote strength ( {voter.vote_strength} ), has been casted for this recipe."
     else:
       raise Exception("You have casted your vote already")

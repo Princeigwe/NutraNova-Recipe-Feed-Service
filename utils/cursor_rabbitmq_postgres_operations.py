@@ -15,7 +15,8 @@ def create_custom_rabbitmq_user_message_id_table():
   create_table_query = """
   CREATE TABLE IF NOT EXISTS custom_rabbitmq_user_message_id (
     id SERIAL PRIMARY KEY,
-    rabbitmq_message_id VARCHAR(255) NOT NULL
+    rabbitmq_message_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
   """
   try:
@@ -55,14 +56,14 @@ def get_custom_rabbitmq_user_message_ids():
       connection.close()
 
 
-def update_custom_rabbitmq_user_message_ids(rabbitmq_message_id):
+def update_custom_rabbitmq_user_message_ids(rabbitmq_message_id, created_at):
   insert_query = """
-  INSERT INTO custom_rabbitmq_user_message_id (rabbitmq_message_id) VALUES (%s)
+  INSERT INTO custom_rabbitmq_user_message_id (rabbitmq_message_id, created_at) VALUES (%s, %s)
   """
   try:
     connection = psycopg2.connect(**db_params)
     cursor = connection.cursor()
-    cursor.execute(insert_query, (rabbitmq_message_id,))
+    cursor.execute(insert_query, (rabbitmq_message_id, created_at))
     connection.commit()
     print("Message id inserted successfully")
   except (Exception, psycopg2.DatabaseError) as error:

@@ -33,7 +33,7 @@ def stream_message(message):
     if message['message_id'] not in consumed_rabbitmq_message_ids:
       print("Consuming user data rabbitmq message...")
       consume_and_update_chef_data(message)
-      update_custom_rabbitmq_user_message_ids(message['message_id']) # insert the consumed message id in the custom rabbitmq user message id table
+      update_custom_rabbitmq_user_message_ids(message['message_id'], message['created_at']) # insert the consumed message id in the custom rabbitmq user message id table
     else:
       print("Message already consumed")
   elif message['type'] == recommended_feed_message_type:

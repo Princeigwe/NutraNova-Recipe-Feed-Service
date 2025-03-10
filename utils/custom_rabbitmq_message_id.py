@@ -10,5 +10,5 @@ def generate_unique_alphanumeric_id():
 
 
 def custom_rabbitmq_recipe_message_id():
-  user_data_message_id = "NNR::" + generate_unique_alphanumeric_id()
-  return user_data_message_id
+  recipe_message_id = "NNR::" + generate_unique_alphanumeric_id()
+  return recipe_message_id

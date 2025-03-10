@@ -1,5 +1,7 @@
 import os
 from .rabbitmq.publishers.request_recommended_feed import request_user_recommended_feed
+import datetime
+from utils.custom_rabbitmq_message_id import custom_rabbitmq_recipe_message_id
 
 
 
@@ -21,7 +23,12 @@ def calculate_new_recommended_feed(request, user):
     #* send rabbitmq message to recommendation service to process recommended feed data. 
 
     username = user['username']
-    request_user_recommended_feed({"type": rabbitmq_message_type, "username": username})
+    request_user_recommended_feed({
+      "message_id": custom_rabbitmq_recipe_message_id(),
+      "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+      "type": rabbitmq_message_type, 
+      "username": username
+    })
 
     # set session like click count to zero
     request.session[f"{user['username']}_vote_click_count"] = 0

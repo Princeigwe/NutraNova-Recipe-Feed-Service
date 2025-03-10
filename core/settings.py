@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from utils.cursor_rabbitmq_postgres_operations import create_custom_rabbitmq_user_message_id_table, get_custom_rabbitmq_user_message_ids
+from utils.cursor_rabbitmq_postgres_operations import create_custom_rabbitmq_user_message_id_table, get_custom_rabbitmq_user_message_ids, create_custom_rabbitmq_recommendation_message_id_table, get_custom_rabbitmq_recommendation_message_ids
 
 load_dotenv()
 
@@ -226,3 +226,5 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 RABBITMQ_USER_DATA_MESSAGE_ID_TABLE = create_custom_rabbitmq_user_message_id_table()
 RABBITMQ_USER_MESSAGE_IDS = get_custom_rabbitmq_user_message_ids()
+RABBITMQ_RECOMMENDATION_MESSAGE_ID_TABLE = create_custom_rabbitmq_recommendation_message_id_table()
+RABBITMQ_RECOMMENDATION_MESSAGE_IDS = get_custom_rabbitmq_recommendation_message_ids()

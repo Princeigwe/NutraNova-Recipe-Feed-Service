@@ -29,10 +29,8 @@ def create_custom_rabbitmq_user_message_id_table():
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
   finally:
-    if cursor:
-      cursor.close()
-    if connection:
-      connection.close()
+    cursor.close()
+    connection.close()
 
 
 def get_custom_rabbitmq_user_message_ids():
@@ -50,10 +48,8 @@ def get_custom_rabbitmq_user_message_ids():
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
   finally:
-    if cursor:
-      cursor.close()
-    if connection:
-      connection.close()
+    cursor.close()
+    connection.close()
 
 
 def update_custom_rabbitmq_user_message_ids(rabbitmq_message_id, created_at):
@@ -69,10 +65,8 @@ def update_custom_rabbitmq_user_message_ids(rabbitmq_message_id, created_at):
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
   finally:
-    if cursor:
-      cursor.close()
-    if connection:
-      connection.close()
+    cursor.close()
+    connection.close()
 
 
 def create_custom_rabbitmq_recommendation_message_id_table():
@@ -93,10 +87,8 @@ def create_custom_rabbitmq_recommendation_message_id_table():
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
   finally:
-    if cursor:
-      cursor.close()
-    if connection:
-      connection.close()
+    cursor.close()
+    connection.close()
 
 
 def get_custom_rabbitmq_recommendation_message_ids():
@@ -114,10 +106,8 @@ def get_custom_rabbitmq_recommendation_message_ids():
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
   finally:
-    if cursor:
-      cursor.close()
-    if connection:
-      connection.close()
+    cursor.close()
+    connection.close()
 
 
 def update_custom_rabbitmq_recommendation_message_ids(rabbitmq_message_id, created_at):
@@ -133,7 +123,5 @@ def update_custom_rabbitmq_recommendation_message_ids(rabbitmq_message_id, creat
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
   finally:
-    if cursor:
-      cursor.close()
-    if connection:
-      connection.close()
+    cursor.close()
+    connection.close()

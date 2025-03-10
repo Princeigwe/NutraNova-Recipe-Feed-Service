@@ -26,11 +26,11 @@ def create_custom_rabbitmq_user_message_id_table():
     cursor.execute(create_table_query)
     connection.commit()
     print("Table created successfully")
-  except (Exception, psycopg2.DatabaseError) as error:
-    print("Error: ", error)
-  finally:
     cursor.close()
     connection.close()
+  except (Exception, psycopg2.DatabaseError) as error:
+    print("Error: ", error)
+
 
 
 def get_custom_rabbitmq_user_message_ids():
@@ -44,12 +44,11 @@ def get_custom_rabbitmq_user_message_ids():
     user_message_ids_records = cursor.fetchall()
     print("User message ids: ", user_message_ids_records)
     user_message_ids = [record[0] for record in user_message_ids_records] # creating a list of user message ids
+    cursor.close()
+    connection.close()
     return user_message_ids
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
-  finally:
-    cursor.close()
-    connection.close()
 
 
 def update_custom_rabbitmq_user_message_ids(rabbitmq_message_id, created_at):
@@ -62,11 +61,10 @@ def update_custom_rabbitmq_user_message_ids(rabbitmq_message_id, created_at):
     cursor.execute(insert_query, (rabbitmq_message_id, created_at))
     connection.commit()
     print("Message id inserted successfully")
-  except (Exception, psycopg2.DatabaseError) as error:
-    print("Error: ", error)
-  finally:
     cursor.close()
     connection.close()
+  except (Exception, psycopg2.DatabaseError) as error:
+    print("Error: ", error)
 
 
 def create_custom_rabbitmq_recommendation_message_id_table():
@@ -84,11 +82,10 @@ def create_custom_rabbitmq_recommendation_message_id_table():
     cursor.execute(create_table_query)
     connection.commit()
     print("Table created successfully")
-  except (Exception, psycopg2.DatabaseError) as error:
-    print("Error: ", error)
-  finally:
     cursor.close()
     connection.close()
+  except (Exception, psycopg2.DatabaseError) as error:
+    print("Error: ", error)
 
 
 def get_custom_rabbitmq_recommendation_message_ids():
@@ -102,12 +99,11 @@ def get_custom_rabbitmq_recommendation_message_ids():
     recommendation_message_ids_records = cursor.fetchall()
     print("Recommendation message ids: ", recommendation_message_ids_records)
     recommendation_message_ids = [record[0] for record in recommendation_message_ids_records] # creating a list of user message ids
+    cursor.close()
+    connection.close()
     return recommendation_message_ids
   except (Exception, psycopg2.DatabaseError) as error:
     print("Error: ", error)
-  finally:
-    cursor.close()
-    connection.close()
 
 
 def update_custom_rabbitmq_recommendation_message_ids(rabbitmq_message_id, created_at):
@@ -120,8 +116,7 @@ def update_custom_rabbitmq_recommendation_message_ids(rabbitmq_message_id, creat
     cursor.execute(insert_query, (rabbitmq_message_id, created_at))
     connection.commit()
     print("Message id inserted successfully")
-  except (Exception, psycopg2.DatabaseError) as error:
-    print("Error: ", error)
-  finally:
     cursor.close()
     connection.close()
+  except (Exception, psycopg2.DatabaseError) as error:
+    print("Error: ", error)

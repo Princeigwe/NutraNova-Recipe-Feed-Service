@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from utils.cursor_rabbitmq_postgres_operations import create_custom_rabbitmq_user_message_id_table, get_custom_rabbitmq_user_message_ids, create_custom_rabbitmq_recommendation_message_id_table, get_custom_rabbitmq_recommendation_message_ids
 
 load_dotenv()
 
@@ -44,7 +45,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = int(os.environ.get('DEBUG', default=0))
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'nutranova-recipe.onrender.com']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'nutranova-recipe.onrender.com', 'recipes-service'] # recipes-service refers to the docker container in the compose file
 
 
 
@@ -63,13 +64,15 @@ INSTALLED_APPS = [
     #local apps
     "recipes.apps.RecipesConfig",
     "file.apps.FileConfig",
+    "stories.apps.StoriesConfig",
 
 
     # 3rd party apps
     "ariadne_django",
     "cloudinary",
     "rest_framework",
-    "channels"
+    "channels",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -104,6 +107,32 @@ WSGI_APPLICATION = 'core.wsgi.application'
 ASGI_APPLICATION = "core.asgi.application"
 
 
+# configuration for websocket scalability with redis
+# CHANNEL_LAYERS = {
+#     "default": {
+#         # "BACKEND": "asgi_redis.RedisChannelLayer",
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+
+#         "CONFIG": {
+#             # "hosts": [(os.environ.get('REDIS_SERVER_NAME'), 25289)],
+#         },
+#         # "ROUTING": "core.routing.websocket_urlpatterns",
+#     },
+# }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+
+        "CONFIG": {
+            "hosts": [(os.environ.get('REDIS_URL'))],
+        },
+    },
+}
+
+
+CHANNELS_WS_PROTOCOLS = ["graphql-transport-ws", ]
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
@@ -113,15 +142,24 @@ DATABASES = {
     #     'NAME': BASE_DIR / 'db.sqlite3',
     # }
 
-
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get('AIVEN_DATABASE_NAME'),
-        'USER': os.environ.get('AIVEN_USER'),
-        'PASSWORD': os.environ.get('AIVEN_PASSWORD'),
-        'HOST': os.environ.get('AIVEN_HOST'),
-        'PORT': os.environ.get('AIVEN_PORT'),
-    },
+        'NAME': os.environ.get('AIVEN_DATABASE_NAME') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_NAME'),
+        'USER': os.environ.get('AIVEN_USER') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_USERNAME'),
+        'PASSWORD': os.environ.get('AIVEN_PASSWORD') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_PASSWORD'),
+        'HOST': os.environ.get('AIVEN_HOST', 'DEV_RECIPES_DB_HOST') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_HOST'),
+        'PORT': os.environ.get('AIVEN_PORT', 'DEV_RECIPES_DB_PORT') if ENVIRONMENT == 'production' else os.environ.get('DEV_RECIPES_DB_PORT') ,
+    }
+
+
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': os.environ.get('AIVEN_DATABASE_NAME'),
+    #     'USER': os.environ.get('AIVEN_USER'),
+    #     'PASSWORD': os.environ.get('AIVEN_PASSWORD'),
+    #     'HOST': os.environ.get('AIVEN_HOST'),
+    #     'PORT': os.environ.get('AIVEN_PORT'),
+    # },
 }
 
 
@@ -180,3 +218,13 @@ CACHES = {
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+# this fixed the issue of not being able to fetch tags MANY-TO-MANY field in single recipe subscription
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+
+RABBITMQ_USER_DATA_MESSAGE_ID_TABLE = create_custom_rabbitmq_user_message_id_table()
+RABBITMQ_USER_MESSAGE_IDS = get_custom_rabbitmq_user_message_ids()
+RABBITMQ_RECOMMENDATION_MESSAGE_ID_TABLE = create_custom_rabbitmq_recommendation_message_id_table()
+RABBITMQ_RECOMMENDATION_MESSAGE_IDS = get_custom_rabbitmq_recommendation_message_ids()

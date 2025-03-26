@@ -127,3 +127,44 @@ def fetch_draft_response():
     }
   }
   return response
+
+
+@pytest.fixture()
+def fetch_recipe_feed_response():
+  chef = {
+    "username": "bestcookm",
+    "first_name": "Prince",
+    "last_name": "Igwe"
+  }
+
+  recipe = {
+    "id": 87,
+    "title": "Cheese Cake Heaven",
+    "description": "A very good appetizing cheese cake",
+    "status": "DRAFT",
+    "chef": {
+      "username": "bestcookm",
+      "first_name": "Prince",
+      "last_name": "Igwe"
+    },
+    "cookingTime": "00:00:00",
+    "preparationTime": "00:05:00"
+    }
+  response = {
+    "data": {
+      "recipeFeed":{
+        "message": "Recipe feed",
+        "feed": [
+          {
+            "recipe": recipe,
+            "up_votes": 6,
+            "up_voters": [chef],
+            "down_votes": 2,
+            "down_voters": [chef]
+          }
+        ]
+      }
+    }
+  }
+
+  return response

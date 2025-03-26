@@ -19,6 +19,7 @@ from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
 from enums.choices import VoteType
 from utils.calculate_new_recommended_feed import calculate_new_recommended_feed
 from utils.multiselect_to_list import multiselect_to_list
+from utils.custom_rabbitmq_message_id import custom_rabbitmq_recipe_message_id
 import os
 
 rabbitmq_message_type = os.environ.get('RECIPE_PUBLISHED_MESSAGE_TYPE')
@@ -286,6 +287,8 @@ def resolve_edit_recipe(_, info, input):
     # send message to rabbitmq if recipe status is 'PUBLISHED'
     if existing_recipe_response['status'] == 'PUBLISHED':
       event_message = {
+        "message_id": custom_rabbitmq_recipe_message_id(),
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "type": rabbitmq_message_type, # adding 'type' key to the message fixes the issue a consumer throws when is consumes different messages to work with
         "chef_username": chef_details['username'],
         "chef_first_name": chef_details['first_name'],
@@ -661,6 +664,8 @@ def resolve_up_vote_recipe(_, info, pk):
       }
       # send message to rabbitmq
       event_message = {
+        "message_id": custom_rabbitmq_recipe_message_id(),
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "type": rabbitmq_message_type,
         "voter_username": user['username'],
         "voter_first_name": user['first_name'],
@@ -716,6 +721,8 @@ def resolve_down_vote_recipe(_, info, pk):
       }
       # send message to rabbitmq
       event_message = {
+        "message_id": custom_rabbitmq_recipe_message_id(),
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "type": rabbitmq_message_type,
         "voter_username": user['username'],
         "voter_first_name": user['first_name'],

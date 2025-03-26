@@ -32,6 +32,6 @@ def test_is_published(mock_post, fetch_single_recipe_response, fetch_draft_respo
               ''',
               "operationName": "PublishedRecipe"
     } )
-  assert response.json() == fetch_draft_response
+  assert response.json() == mock_post.json.return_value
   assert_recipe_status(fetch_single_recipe_response, fetch_draft_response)
   
